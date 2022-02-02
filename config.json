@@ -1,0 +1,15 @@
+[
+    {
+        "name": "JSON Placeholder by Typicode",
+        "url": "https://jsonplaceholder.typicode.com/",
+        "description": "Fake REST API for testing applications",
+        "timeout": 60,
+        "interval": 60
+    },
+    {
+        "name": "Github",
+        "url": "https://github.com/healthz",
+        "description": "Github API",
+        "method": "GET"
+    }
+]
