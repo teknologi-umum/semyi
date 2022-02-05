@@ -1,12 +1,10 @@
-import { defineConfig } from "vite";
-import vue from "@vitejs/plugin-vue";
-import { resolve } from "path";
+import { defineConfig } from 'vite';
+import solidPlugin from 'vite-plugin-solid';
 
 export default defineConfig({
-  plugins: [vue()],
-  resolve: {
-    alias: {
-      "@": resolve("src"),
-    },
+  plugins: [solidPlugin()],
+  build: {
+    target: 'esnext',
+    polyfillDynamicImport: false,
   },
 });
