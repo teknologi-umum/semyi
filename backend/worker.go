@@ -107,6 +107,7 @@ func (w *Worker) makeRequest(ctx context.Context) (*Response, error) {
 		StatusCode:      resp.StatusCode,
 		RequestDuration: timeEnd - timeStart,
 		Timestamp:       time.Now().UnixMilli(),
+		Endpoint:        *w.endpoint,
 	}, nil
 }
 

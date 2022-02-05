@@ -23,9 +23,7 @@ func (d *Deps) WriteSnapshot(ctx context.Context, items []Response) error {
 			`INSERT INTO
 				snapshot
 			(
-				name,
 				url,
-				description,
 				timeout,
 				interval,
 				status_code,
@@ -34,11 +32,9 @@ func (d *Deps) WriteSnapshot(ctx context.Context, items []Response) error {
 			)
 			VALUES
 			(
-				$1, $2, $3, $4, $5, $6, $7, $8
+				$1, $2, $3, $4, $5, $6,
 			)`,
-			item.Endpoint.Name,
 			item.Endpoint.URL,
-			item.Endpoint.Description,
 			item.Endpoint.Timeout,
 			item.Endpoint.Interval,
 			item.StatusCode,

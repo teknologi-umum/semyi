@@ -4,10 +4,12 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"strings"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/rs/cors"
 	"github.com/unrolled/secure"
 )
@@ -22,31 +24,44 @@ func (d *Deps) NewServer(port, staticPath string) *http.Server {
 
 	corsMiddleware := cors.New(cors.Options{
 		Debug:          os.Getenv("ENV") == "development",
-		AllowedOrigins: []string{},
+		AllowedOrigins: []string{"*"},
 		AllowedMethods: []string{"GET", "OPTIONS"},
 	})
 
-	api := http.NewServeMux()
-	api.HandleFunc("/overview", func(rw http.ResponseWriter, r *http.Request) {
+	api := chi.NewRouter()
+	api.Use(corsMiddleware.Handler)
+	api.Get("/overview", func(rw http.ResponseWriter, r *http.Request) {
 		err := d.snapshotOverview(rw, r)
 		if err != nil {
+			log.Printf("failed to get snapshot: %s", err)
 			rw.WriteHeader(http.StatusInternalServerError)
 			rw.Header().Set("Content-Type", "application/json")
 			rw.Write([]byte(`{"error": "` + err.Error() + `"}`))
 		}
 	})
-	api.HandleFunc("/by", func(rw http.ResponseWriter, r *http.Request) {
-		err := d.fetchSnapshot(rw, r)
+	api.Get("/by", func(rw http.ResponseWriter, r *http.Request) {
+		err := d.snapshotBy(rw, r)
 		if err != nil {
+			log.Printf("failed to get snapshot by url: %s", err)
+			rw.WriteHeader(http.StatusInternalServerError)
+			rw.Header().Set("Content-Type", "application/json")
+			rw.Write([]byte(`{"error": "` + err.Error() + `"}`))
+		}
+	})
+	api.Get("/static", func(rw http.ResponseWriter, r *http.Request) {
+		err := d.staticSnapshot(rw, r)
+		if err != nil {
+			log.Printf("failed to serve static: %s", err)
 			rw.WriteHeader(http.StatusInternalServerError)
 			rw.Header().Set("Content-Type", "application/json")
 			rw.Write([]byte(`{"error": "` + err.Error() + `"}`))
 		}
 	})
 
-	r := http.NewServeMux()
+	r := chi.NewRouter()
+	r.Use(secureMiddleware.Handler)
+	r.Mount("/api", api)
 	r.Handle("/", http.FileServer(http.Dir(staticPath)))
-	r.Handle("/api", corsMiddleware.Handler(secureMiddleware.Handler(api)))
 
 	return &http.Server{
 		Addr:    ":" + port,
@@ -55,35 +70,12 @@ func (d *Deps) NewServer(port, staticPath string) *http.Server {
 }
 
 func (d *Deps) snapshotOverview(w http.ResponseWriter, r *http.Request) error {
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		return fmt.Errorf("not flusher")
+	}
+
 	endpointsBytes, err := d.Cache.Get("endpoint:urls")
-	if err != nil {
-		return err
-	}
-
-	endpoints := strings.Split(string(endpointsBytes), ",")
-
-	var snapshots []Response
-
-	for _, endpoint := range endpoints {
-		if endpoint == "" {
-			continue
-		}
-
-		snapshotBytes, err := d.Cache.Get(endpoint)
-		if err != nil {
-			return err
-		}
-
-		var snapshot Response
-		err = json.Unmarshal(snapshotBytes, &snapshot)
-		if err != nil {
-			return err
-		}
-
-		snapshots = append(snapshots, snapshot)
-	}
-
-	data, err := json.Marshal(snapshots)
 	if err != nil {
 		return err
 	}
@@ -92,11 +84,41 @@ func (d *Deps) snapshotOverview(w http.ResponseWriter, r *http.Request) error {
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
-	w.Write([]byte("data: " + string(data) + "\n\n"))
+
+	go func() {
+		endpoints := strings.Split(string(endpointsBytes), ",")
+		sub, err := d.NewSubscriber(endpoints...)
+		if err != nil {
+			log.Printf("failed to subscribe to endpoints: %s", err)
+			return
+		}
+	
+		for data := range sub.Listen(r.Context()) {
+			marshaled, err := json.Marshal(data)
+			if err != nil {
+				log.Printf("failed to marshal data: %s", err)
+				continue
+			}
+
+			_, err = w.Write([]byte("data: " + string(marshaled) + "\n\n"))
+			if err != nil {
+				log.Printf("failed to write data: %s", err)
+				continue
+			}
+
+			flusher.Flush()
+		}
+	}()
+	
 	return nil
 }
 
-func (d *Deps) fetchSnapshot(w http.ResponseWriter, r *http.Request) error {
+func (d *Deps) snapshotBy(w http.ResponseWriter, r *http.Request) error {
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		return fmt.Errorf("not flusher")
+	}
+
 	url := r.URL.Query().Get("url")
 	if url == "" {
 		return fmt.Errorf("url is none")
@@ -114,13 +136,78 @@ func (d *Deps) fetchSnapshot(w http.ResponseWriter, r *http.Request) error {
 		return nil
 	}
 
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+
+	go func() {
+		endpoints := strings.Split(url, ",")
+		sub, err := d.NewSubscriber(endpoints...)
+		if err != nil {
+			log.Printf("failed to subscribe to endpoints: %s", err)
+			return
+		}
+
+		for data := range sub.Listen(r.Context()) {
+			marshaled, err := json.Marshal(data)
+			if err != nil {
+				log.Printf("failed to marshal data: %s", err)
+				continue
+			}
+
+			_, err = w.Write([]byte("data: " + string(marshaled) + "\n\n"))
+			if err != nil {
+				log.Printf("failed to write data: %s", err)
+				continue
+			}
+
+			flusher.Flush()
+		}
+	}()
+
+	return nil
+}
+
+func (d *Deps) staticSnapshot(w http.ResponseWriter, r *http.Request) error {
+	url := r.URL.Query().Get("url")
+	if url == "" {
+		return fmt.Errorf("url is none")
+	}
+
+	endpointsBytes, err := d.Cache.Get("endpoint:urls")
+	if err != nil {
+		return err
+	}
+	
+	endpoints := strings.Split(string(endpointsBytes), ",")
+
+	if !contains(url, endpoints) {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{"error": "url is not in the list of endpoints"}`))
+		return nil
+	}
+
+	// acquire endpoint metadata from cache
+	endpointBytes, err := d.Cache.Get("endpoint:"+url)
+	if err != nil {
+		return err
+	}
+
+	var endpoint Endpoint
+	err = json.Unmarshal(endpointBytes, &endpoint)
+	if err != nil {
+		return err
+	}
+
 	c, err := d.DB.Conn(r.Context())
 	if err != nil {
 		return err
 	}
 	defer c.Close()
 
-	tx, err := c.BeginTx(r.Context(), &sql.TxOptions{Isolation: sql.LevelReadCommitted, ReadOnly: true})
+	tx, err := c.BeginTx(r.Context(), &sql.TxOptions{Isolation: sql.LevelReadUncommitted, ReadOnly: true})
 	if err != nil {
 		return err
 	}
@@ -128,18 +215,16 @@ func (d *Deps) fetchSnapshot(w http.ResponseWriter, r *http.Request) error {
 	rows, err := tx.QueryContext(
 		r.Context(),
 		`SELECT
-			name,
 			url,
-			description,
 			timeout,
 			interval,
 			status_code,
 			request_duration,
 			created_at
 		FROM 
-			snapshots 
+			snapshot 
 		WHERE 
-			url = $1 
+			url = ?
 		ORDER BY 
 			created_at DESC 
 		LIMIT 100`,
@@ -155,9 +240,7 @@ func (d *Deps) fetchSnapshot(w http.ResponseWriter, r *http.Request) error {
 	for rows.Next() {
 		var snapshot Response
 		err := rows.Scan(
-			&snapshot.Name,
 			&snapshot.URL,
-			&snapshot.Description,
 			&snapshot.Timeout,
 			&snapshot.Interval,
 			&snapshot.StatusCode,
@@ -169,7 +252,18 @@ func (d *Deps) fetchSnapshot(w http.ResponseWriter, r *http.Request) error {
 			return err
 		}
 
+		snapshot.Name = endpoint.Name
+		snapshot.Description = endpoint.Description
+		snapshot.Method = endpoint.Method
+		snapshot.Headers = endpoint.Headers
+
 		snapshots = append(snapshots, snapshot)
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		tx.Rollback()
+		return err
 	}
 
 	data, err := json.Marshal(snapshots)
@@ -178,9 +272,7 @@ func (d *Deps) fetchSnapshot(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	w.Header().Set("Content-Type", "text/event-stream")
-	w.Header().Set("Cache-Control", "no-cache")
-	w.Header().Set("Connection", "keep-alive")
-	w.Write([]byte("data: " + string(data) + "\n\n"))
-	return nil
+	w.Header().Set("Content-Type", "application/json")
+	_, err = w.Write(data)
+	return err
 }

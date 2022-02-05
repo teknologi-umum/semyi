@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"log"
 	"net/http"
@@ -56,6 +57,13 @@ func main() {
 		port = "5000"
 	}
 
+	if os.Getenv("ENV") == "" {
+		err := os.Setenv("ENV", "development")
+		if err != nil {
+			log.Fatalf("Error setting ENV: %v", err)
+		}
+	}
+
 	defTimeout, err := strconv.Atoi(defaultTimeout)
 	if err != nil {
 		log.Fatalf("Failed to parse default timeout: %v", err)
@@ -77,6 +85,14 @@ func main() {
 		log.Fatalf("failed to open database: %v", err)
 	}
 	defer db.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
+
+	err = Migrate(db, ctx)
+	if err != nil {
+		log.Fatalf("failed to migrate database: %v", err)
+	}
 
 	cache, err := bigcache.NewBigCache(bigcache.DefaultConfig(time.Hour * 24))
 	if err != nil {
@@ -105,9 +121,23 @@ func main() {
 			log.Fatalf("Failed to register endpoint url into cache: %v", err)
 		}
 
+		log.Printf("Registered endpoint: %s", endpoint.Name)
+
 		go func() {
 			worker.Run()
 		}()
+
+		// set the name, description, headers, and method of an endpoint
+		// to the cache
+		data, err := json.Marshal(endpoint)
+		if err != nil {
+			log.Fatalf("Failed to marshal endpoint: %v", err)
+		}
+
+		err = deps.Cache.Set("endpoint:"+endpoint.URL, data)
+		if err != nil {
+			log.Fatalf("Failed to set endpoint data into cache: %v", err)
+		}
 	}
 
 	// Dump snapshot every 5 seconds
@@ -116,6 +146,8 @@ func main() {
 			deps.Queue.Lock()
 
 			if len(deps.Queue.Items) > 0 {
+				log.Printf("Dumping snapshot: %d items", len(deps.Queue.Items))
+
 				ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 
 				err := deps.WriteSnapshot(ctx, deps.Queue.Items)
@@ -139,6 +171,7 @@ func main() {
 	server := deps.NewServer(port, staticPath)
 	go func() {
 		// Start the server
+		log.Printf("Starting server on port %s", port)
 		if e := server.ListenAndServe(); e != nil && !errors.Is(e, http.ErrServerClosed) {
 			log.Fatalf("Failed to start server: %v", e)
 		}
@@ -148,8 +181,9 @@ func main() {
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, os.Interrupt, syscall.SIGTERM)
 	<-signalChan
-
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	
+	log.Println("\nShutting down server...")
+	ctx, cancel = context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
 	err = server.Shutdown(ctx)
