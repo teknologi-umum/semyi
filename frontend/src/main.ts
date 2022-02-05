@@ -1,13 +1,14 @@
 import { createApp } from "vue";
 import { createRouter, createWebHistory } from "vue-router";
 import Layout from "@/components/Layout.vue";
-import IndexPage from "@/pages/index.vue";
-import StatusPage from "@/pages/status.vue";
+import OverviewPage from "@/pages/Overview.vue";
+import StatusPage from "@/pages/Status.vue";
+import "@/global.css";
 
 const router = createRouter({
   history: createWebHistory(),
   routes: [
-    { path: "/", component: IndexPage },
+    { path: "/", component: OverviewPage },
     { path: "/status", component: StatusPage },
   ],
 });
