@@ -38,7 +38,7 @@ func (s *Subscriber) Listen(ctx context.Context) <-chan Response {
 				log.Printf("Recovered from panic: %v", r)
 			}
 		}()
-		
+
 		for {
 			select {
 			case <-ctx.Done():

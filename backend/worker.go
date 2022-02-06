@@ -28,8 +28,9 @@ type Worker struct {
 	cache    *bigcache.BigCache
 }
 
-func (d *Deps) NewWorker(endpoint *Endpoint) (*Worker, error) {
+func (d *Deps) NewWorker(e Endpoint) (*Worker, error) {
 	// Validate the endpoint
+	var endpoint = &e
 	_, err := ValidateConfiguration(*endpoint)
 	if err != nil {
 		return &Worker{}, err
@@ -62,7 +63,9 @@ func (w *Worker) Run() {
 		// Make the request
 		response, err := w.makeRequest(ctx)
 		if err != nil {
+			cancel()
 			log.Printf("Failed to make request: %v", err)
+			continue
 		}
 
 		// Insert the response to the database

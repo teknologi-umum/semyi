@@ -16,7 +16,7 @@ func Migrate(db *sql.DB, ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	
+
 	_, err = tx.ExecContext(
 		ctx,
 		`CREATE TABLE IF NOT EXISTS snapshot (

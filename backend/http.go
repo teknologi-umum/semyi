@@ -52,14 +52,14 @@ func (d *Deps) snapshotOverview(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusPreconditionFailed)
 		w.Header().Set("Content-Type", "application/json")
 		w.Write([]byte(`{"error": "not flusher"}`))
-		return 
+		return
 	}
 
 	endpointsBytes, err := d.Cache.Get("endpoint:urls")
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Header().Set("Content-Type", "application/json")
-		errBytes, err := json.Marshal(map[string]string{"error":err.Error()})
+		errBytes, err := json.Marshal(map[string]string{"error": err.Error()})
 		if err != nil {
 			w.Write([]byte(`{"error": "internal server error"}`))
 			return
@@ -78,7 +78,7 @@ func (d *Deps) snapshotOverview(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Header().Set("Content-Type", "application/json")
-		errBytes, err := json.Marshal(map[string]string{"error":fmt.Errorf("failed to subscribe to endpoints: %s", err).Error()})
+		errBytes, err := json.Marshal(map[string]string{"error": fmt.Errorf("failed to subscribe to endpoints: %s", err).Error()})
 		if err != nil {
 			w.Write([]byte(`{"error": "internal server error"}`))
 			return
@@ -114,7 +114,7 @@ func (d *Deps) snapshotBy(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusPreconditionFailed)
 		w.Header().Set("Content-Type", "application/json")
 		w.Write([]byte(`{"error": "not flusher"}`))
-		return 
+		return
 	}
 
 	url := r.URL.Query().Get("url")
@@ -122,14 +122,14 @@ func (d *Deps) snapshotBy(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Header().Set("Content-Type", "application/json")
 		w.Write([]byte(`{"error": "url is required"}`))
-		return 
+		return
 	}
 
 	endpointsBytes, err := d.Cache.Get("endpoint:urls")
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Header().Set("Content-Type", "application/json")
-		errBytes, err := json.Marshal(map[string]string{"error":err.Error()})
+		errBytes, err := json.Marshal(map[string]string{"error": err.Error()})
 		if err != nil {
 			w.Write([]byte(`{"error": "internal server error"}`))
 			return
@@ -142,7 +142,7 @@ func (d *Deps) snapshotBy(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte(`{"error": "url is not in the list of endpoints"}`))
-		return 
+		return
 	}
 
 	w.Header().Set("Content-Type", "text/event-stream")
@@ -190,14 +190,14 @@ func (d *Deps) staticSnapshot(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Header().Set("Content-Type", "application/json")
 		w.Write([]byte(`{"error": "url is required"}`))
-		return 
+		return
 	}
 
 	endpointsBytes, err := d.Cache.Get("endpoint:urls")
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Header().Set("Content-Type", "application/json")
-		errBytes, err := json.Marshal(map[string]string{"error":err.Error()})
+		errBytes, err := json.Marshal(map[string]string{"error": err.Error()})
 		if err != nil {
 			w.Write([]byte(`{"error": "internal server error"}`))
 			return
@@ -205,22 +205,22 @@ func (d *Deps) staticSnapshot(w http.ResponseWriter, r *http.Request) {
 		w.Write(errBytes)
 		return
 	}
-	
+
 	endpoints := strings.Split(string(endpointsBytes), ",")
 
 	if !contains(url, endpoints) {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Header().Set("Content-Type", "application/json")
 		w.Write([]byte(`{"error": "url is not in the list of endpoints"}`))
-		return 
+		return
 	}
 
 	// acquire endpoint metadata from cache
-	endpointBytes, err := d.Cache.Get("endpoint:"+url)
+	endpointBytes, err := d.Cache.Get("endpoint:" + url)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Header().Set("Content-Type", "application/json")
-		errBytes, err := json.Marshal(map[string]string{"error":err.Error()})
+		errBytes, err := json.Marshal(map[string]string{"error": err.Error()})
 		if err != nil {
 			w.Write([]byte(`{"error": "internal server error"}`))
 			return
@@ -234,7 +234,7 @@ func (d *Deps) staticSnapshot(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Header().Set("Content-Type", "application/json")
-		errBytes, err := json.Marshal(map[string]string{"error":err.Error()})
+		errBytes, err := json.Marshal(map[string]string{"error": err.Error()})
 		if err != nil {
 			w.Write([]byte(`{"error": "internal server error"}`))
 			return
@@ -247,7 +247,7 @@ func (d *Deps) staticSnapshot(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Header().Set("Content-Type", "application/json")
-		errBytes, err := json.Marshal(map[string]string{"error":err.Error()})
+		errBytes, err := json.Marshal(map[string]string{"error": err.Error()})
 		if err != nil {
 			w.Write([]byte(`{"error": "internal server error"}`))
 			return
@@ -261,7 +261,7 @@ func (d *Deps) staticSnapshot(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Header().Set("Content-Type", "application/json")
-		errBytes, err := json.Marshal(map[string]string{"error":err.Error()})
+		errBytes, err := json.Marshal(map[string]string{"error": err.Error()})
 		if err != nil {
 			w.Write([]byte(`{"error": "internal server error"}`))
 			return
@@ -292,7 +292,7 @@ func (d *Deps) staticSnapshot(w http.ResponseWriter, r *http.Request) {
 		tx.Rollback()
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Header().Set("Content-Type", "application/json")
-		errBytes, err := json.Marshal(map[string]string{"error":err.Error()})
+		errBytes, err := json.Marshal(map[string]string{"error": err.Error()})
 		if err != nil {
 			w.Write([]byte(`{"error": "internal server error"}`))
 			return
@@ -316,14 +316,14 @@ func (d *Deps) staticSnapshot(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			tx.Rollback()
 			w.WriteHeader(http.StatusInternalServerError)
-		w.Header().Set("Content-Type", "application/json")
-		errBytes, err := json.Marshal(map[string]string{"error":err.Error()})
-		if err != nil {
-			w.Write([]byte(`{"error": "internal server error"}`))
+			w.Header().Set("Content-Type", "application/json")
+			errBytes, err := json.Marshal(map[string]string{"error": err.Error()})
+			if err != nil {
+				w.Write([]byte(`{"error": "internal server error"}`))
+				return
+			}
+			w.Write(errBytes)
 			return
-		}
-		w.Write(errBytes)
-		return
 		}
 
 		snapshot.Name = endpoint.Name
@@ -339,7 +339,7 @@ func (d *Deps) staticSnapshot(w http.ResponseWriter, r *http.Request) {
 		tx.Rollback()
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Header().Set("Content-Type", "application/json")
-		errBytes, err := json.Marshal(map[string]string{"error":err.Error()})
+		errBytes, err := json.Marshal(map[string]string{"error": err.Error()})
 		if err != nil {
 			w.Write([]byte(`{"error": "internal server error"}`))
 			return
@@ -352,7 +352,7 @@ func (d *Deps) staticSnapshot(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Header().Set("Content-Type", "application/json")
-		errBytes, err := json.Marshal(map[string]string{"error":err.Error()})
+		errBytes, err := json.Marshal(map[string]string{"error": err.Error()})
 		if err != nil {
 			w.Write([]byte(`{"error": "internal server error"}`))
 			return

@@ -110,7 +110,7 @@ func main() {
 
 	// Create a new worker
 	for _, endpoint := range config {
-		worker, err := deps.NewWorker(&endpoint)
+		worker, err := deps.NewWorker(endpoint)
 		if err != nil {
 			log.Fatalf("Failed to create worker: %v", err)
 		}
@@ -158,7 +158,6 @@ func main() {
 
 			if len(deps.Queue.Items) > 0 {
 				log.Printf("Dumping snapshot: %d items", len(deps.Queue.Items))
-
 				ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 
 				err := deps.WriteSnapshot(ctx, deps.Queue.Items)
@@ -186,7 +185,7 @@ func main() {
 				log.Printf("Recovered from panic: %v", r)
 			}
 		}()
-		
+
 		// Start the server
 		log.Printf("Starting server on port %s", port)
 		if e := server.ListenAndServe(); e != nil && !errors.Is(e, http.ErrServerClosed) {
@@ -198,7 +197,7 @@ func main() {
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, os.Interrupt, syscall.SIGTERM)
 	<-signalChan
-	
+
 	log.Println("\nShutting down server...")
 	ctx, cancel = context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
