@@ -12,7 +12,6 @@ FROM debian:bullseye
 RUN apt-get update && apt-get upgrade -y && apt-get install -y sqlite3
 WORKDIR /app
 COPY config.json .
-COPY db.sqlite3 .
 COPY --from=backend /app/semya .
 COPY --from=frontend /app/dist .
 ENV STATIC_PATH=/app/dist

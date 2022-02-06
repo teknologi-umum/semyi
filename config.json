@@ -1,10 +1,10 @@
 [
     {
-        "name": "JSON Placeholder by Typicode",
-        "url": "https://jsonplaceholder.typicode.com/",
-        "description": "Fake REST API for testing applications",
+        "name": "Digital Ocean",
+        "url": "https://status.digitalocean.com/",
+        "description": "The place where the whale stands",
         "timeout": 60,
-        "interval": 60
+        "interval": 10
     },
     {
         "name": "Github",
