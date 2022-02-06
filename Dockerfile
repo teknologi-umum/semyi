@@ -16,4 +16,5 @@ COPY db.sqlite3 .
 COPY --from=backend /app/semya .
 COPY --from=frontend /app/dist .
 ENV STATIC_PATH=/app/dist
+EXPOSE ${PORT}
 CMD ["/app/semya"]
