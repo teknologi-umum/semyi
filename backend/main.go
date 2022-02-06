@@ -124,6 +124,11 @@ func main() {
 		log.Printf("Registered endpoint: %s", endpoint.Name)
 
 		go func() {
+			defer func() {
+				if r := recover(); r != nil {
+					log.Printf("Recovered from panic: %v", r)
+				}
+			}()
 			worker.Run()
 		}()
 
@@ -142,6 +147,12 @@ func main() {
 
 	// Dump snapshot every 5 seconds
 	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				log.Printf("Recovered from panic: %v", r)
+			}
+		}()
+
 		for {
 			deps.Queue.Lock()
 
@@ -170,6 +181,12 @@ func main() {
 
 	server := deps.NewServer(port, staticPath)
 	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				log.Printf("Recovered from panic: %v", r)
+			}
+		}()
+		
 		// Start the server
 		log.Printf("Starting server on port %s", port)
 		if e := server.ListenAndServe(); e != nil && !errors.Is(e, http.ErrServerClosed) {

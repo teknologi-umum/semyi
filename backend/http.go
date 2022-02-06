@@ -26,37 +26,14 @@ func (d *Deps) NewServer(port, staticPath string) *http.Server {
 		Debug:          os.Getenv("ENV") == "development",
 		AllowedOrigins: []string{"*"},
 		AllowedMethods: []string{"GET", "OPTIONS"},
+		AllowedHeaders: []string{"Content-Type"},
 	})
 
 	api := chi.NewRouter()
 	api.Use(corsMiddleware.Handler)
-	api.Get("/overview", func(rw http.ResponseWriter, r *http.Request) {
-		err := d.snapshotOverview(rw, r)
-		if err != nil {
-			log.Printf("failed to get snapshot: %s", err)
-			rw.WriteHeader(http.StatusInternalServerError)
-			rw.Header().Set("Content-Type", "application/json")
-			rw.Write([]byte(`{"error": "` + err.Error() + `"}`))
-		}
-	})
-	api.Get("/by", func(rw http.ResponseWriter, r *http.Request) {
-		err := d.snapshotBy(rw, r)
-		if err != nil {
-			log.Printf("failed to get snapshot by url: %s", err)
-			rw.WriteHeader(http.StatusInternalServerError)
-			rw.Header().Set("Content-Type", "application/json")
-			rw.Write([]byte(`{"error": "` + err.Error() + `"}`))
-		}
-	})
-	api.Get("/static", func(rw http.ResponseWriter, r *http.Request) {
-		err := d.staticSnapshot(rw, r)
-		if err != nil {
-			log.Printf("failed to serve static: %s", err)
-			rw.WriteHeader(http.StatusInternalServerError)
-			rw.Header().Set("Content-Type", "application/json")
-			rw.Write([]byte(`{"error": "` + err.Error() + `"}`))
-		}
-	})
+	api.Get("/overview", d.snapshotOverview)
+	api.Get("/by", d.snapshotBy)
+	api.Get("/static", d.staticSnapshot)
 
 	r := chi.NewRouter()
 	r.Use(secureMiddleware.Handler)
@@ -69,115 +46,164 @@ func (d *Deps) NewServer(port, staticPath string) *http.Server {
 	}
 }
 
-func (d *Deps) snapshotOverview(w http.ResponseWriter, r *http.Request) error {
+func (d *Deps) snapshotOverview(w http.ResponseWriter, r *http.Request) {
 	flusher, ok := w.(http.Flusher)
 	if !ok {
-		return fmt.Errorf("not flusher")
+		w.WriteHeader(http.StatusPreconditionFailed)
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{"error": "not flusher"}`))
+		return 
 	}
 
 	endpointsBytes, err := d.Cache.Get("endpoint:urls")
 	if err != nil {
-		return err
-	}
-
-	w.WriteHeader(http.StatusOK)
-	w.Header().Set("Content-Type", "text/event-stream")
-	w.Header().Set("Cache-Control", "no-cache")
-	w.Header().Set("Connection", "keep-alive")
-
-	go func() {
-		endpoints := strings.Split(string(endpointsBytes), ",")
-		sub, err := d.NewSubscriber(endpoints...)
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Header().Set("Content-Type", "application/json")
+		errBytes, err := json.Marshal(map[string]string{"error":err.Error()})
 		if err != nil {
-			log.Printf("failed to subscribe to endpoints: %s", err)
+			w.Write([]byte(`{"error": "internal server error"}`))
 			return
 		}
-	
-		for data := range sub.Listen(r.Context()) {
+		w.Write(errBytes)
+		return
+	}
+
+	w.Header().Set("Connection", "keep-alive")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.WriteHeader(http.StatusOK)
+
+	endpoints := strings.Split(string(endpointsBytes), ",")
+	sub, err := d.NewSubscriber(endpoints...)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Header().Set("Content-Type", "application/json")
+		errBytes, err := json.Marshal(map[string]string{"error":fmt.Errorf("failed to subscribe to endpoints: %s", err).Error()})
+		if err != nil {
+			w.Write([]byte(`{"error": "internal server error"}`))
+			return
+		}
+		w.Write(errBytes)
+		return
+	}
+
+	for {
+		select {
+		case <-r.Context().Done():
+			return
+		case data := <-sub.Listen(r.Context()):
 			marshaled, err := json.Marshal(data)
 			if err != nil {
 				log.Printf("failed to marshal data: %s", err)
-				continue
 			}
 
 			_, err = w.Write([]byte("data: " + string(marshaled) + "\n\n"))
 			if err != nil {
 				log.Printf("failed to write data: %s", err)
-				continue
 			}
 
 			flusher.Flush()
 		}
-	}()
-	
-	return nil
+	}
+
 }
 
-func (d *Deps) snapshotBy(w http.ResponseWriter, r *http.Request) error {
+func (d *Deps) snapshotBy(w http.ResponseWriter, r *http.Request) {
 	flusher, ok := w.(http.Flusher)
 	if !ok {
-		return fmt.Errorf("not flusher")
+		w.WriteHeader(http.StatusPreconditionFailed)
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{"error": "not flusher"}`))
+		return 
 	}
 
 	url := r.URL.Query().Get("url")
 	if url == "" {
-		return fmt.Errorf("url is none")
+		w.WriteHeader(http.StatusBadRequest)
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{"error": "url is required"}`))
+		return 
 	}
 
 	endpointsBytes, err := d.Cache.Get("endpoint:urls")
 	if err != nil {
-		return err
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Header().Set("Content-Type", "application/json")
+		errBytes, err := json.Marshal(map[string]string{"error":err.Error()})
+		if err != nil {
+			w.Write([]byte(`{"error": "internal server error"}`))
+			return
+		}
+		w.Write(errBytes)
+		return
 	}
 
 	if !strings.Contains(string(endpointsBytes), url) {
-		w.WriteHeader(http.StatusBadRequest)
 		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte(`{"error": "url is not in the list of endpoints"}`))
-		return nil
+		return 
 	}
 
-	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
+	w.WriteHeader(http.StatusOK)
 
-	go func() {
-		endpoints := strings.Split(url, ",")
-		sub, err := d.NewSubscriber(endpoints...)
+	endpoints := strings.Split(url, ",")
+	sub, err := d.NewSubscriber(endpoints...)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Header().Set("Content-Type", "application/json")
+		errBytes, err := json.Marshal(map[string]string{"error": fmt.Errorf("failed to subscribe to endpoints: %s", err).Error()})
 		if err != nil {
-			log.Printf("failed to subscribe to endpoints: %s", err)
+			w.Write([]byte(`{"error": "internal server error"}`))
 			return
 		}
+		w.Write(errBytes)
+		return
+	}
 
-		for data := range sub.Listen(r.Context()) {
+	for {
+		select {
+		case <-r.Context().Done():
+			return
+		case data := <-sub.Listen(r.Context()):
 			marshaled, err := json.Marshal(data)
 			if err != nil {
 				log.Printf("failed to marshal data: %s", err)
-				continue
 			}
 
 			_, err = w.Write([]byte("data: " + string(marshaled) + "\n\n"))
 			if err != nil {
 				log.Printf("failed to write data: %s", err)
-				continue
 			}
-
 			flusher.Flush()
 		}
-	}()
+	}
 
-	return nil
 }
 
-func (d *Deps) staticSnapshot(w http.ResponseWriter, r *http.Request) error {
+func (d *Deps) staticSnapshot(w http.ResponseWriter, r *http.Request) {
 	url := r.URL.Query().Get("url")
 	if url == "" {
-		return fmt.Errorf("url is none")
+		w.WriteHeader(http.StatusBadRequest)
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{"error": "url is required"}`))
+		return 
 	}
 
 	endpointsBytes, err := d.Cache.Get("endpoint:urls")
 	if err != nil {
-		return err
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Header().Set("Content-Type", "application/json")
+		errBytes, err := json.Marshal(map[string]string{"error":err.Error()})
+		if err != nil {
+			w.Write([]byte(`{"error": "internal server error"}`))
+			return
+		}
+		w.Write(errBytes)
+		return
 	}
 	
 	endpoints := strings.Split(string(endpointsBytes), ",")
@@ -186,30 +212,62 @@ func (d *Deps) staticSnapshot(w http.ResponseWriter, r *http.Request) error {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Header().Set("Content-Type", "application/json")
 		w.Write([]byte(`{"error": "url is not in the list of endpoints"}`))
-		return nil
+		return 
 	}
 
 	// acquire endpoint metadata from cache
 	endpointBytes, err := d.Cache.Get("endpoint:"+url)
 	if err != nil {
-		return err
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Header().Set("Content-Type", "application/json")
+		errBytes, err := json.Marshal(map[string]string{"error":err.Error()})
+		if err != nil {
+			w.Write([]byte(`{"error": "internal server error"}`))
+			return
+		}
+		w.Write(errBytes)
+		return
 	}
 
 	var endpoint Endpoint
 	err = json.Unmarshal(endpointBytes, &endpoint)
 	if err != nil {
-		return err
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Header().Set("Content-Type", "application/json")
+		errBytes, err := json.Marshal(map[string]string{"error":err.Error()})
+		if err != nil {
+			w.Write([]byte(`{"error": "internal server error"}`))
+			return
+		}
+		w.Write(errBytes)
+		return
 	}
 
 	c, err := d.DB.Conn(r.Context())
 	if err != nil {
-		return err
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Header().Set("Content-Type", "application/json")
+		errBytes, err := json.Marshal(map[string]string{"error":err.Error()})
+		if err != nil {
+			w.Write([]byte(`{"error": "internal server error"}`))
+			return
+		}
+		w.Write(errBytes)
+		return
 	}
 	defer c.Close()
 
 	tx, err := c.BeginTx(r.Context(), &sql.TxOptions{Isolation: sql.LevelReadUncommitted, ReadOnly: true})
 	if err != nil {
-		return err
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Header().Set("Content-Type", "application/json")
+		errBytes, err := json.Marshal(map[string]string{"error":err.Error()})
+		if err != nil {
+			w.Write([]byte(`{"error": "internal server error"}`))
+			return
+		}
+		w.Write(errBytes)
+		return
 	}
 
 	rows, err := tx.QueryContext(
@@ -232,7 +290,15 @@ func (d *Deps) staticSnapshot(w http.ResponseWriter, r *http.Request) error {
 	)
 	if err != nil {
 		tx.Rollback()
-		return err
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Header().Set("Content-Type", "application/json")
+		errBytes, err := json.Marshal(map[string]string{"error":err.Error()})
+		if err != nil {
+			w.Write([]byte(`{"error": "internal server error"}`))
+			return
+		}
+		w.Write(errBytes)
+		return
 	}
 	defer rows.Close()
 
@@ -249,7 +315,15 @@ func (d *Deps) staticSnapshot(w http.ResponseWriter, r *http.Request) error {
 		)
 		if err != nil {
 			tx.Rollback()
-			return err
+			w.WriteHeader(http.StatusInternalServerError)
+		w.Header().Set("Content-Type", "application/json")
+		errBytes, err := json.Marshal(map[string]string{"error":err.Error()})
+		if err != nil {
+			w.Write([]byte(`{"error": "internal server error"}`))
+			return
+		}
+		w.Write(errBytes)
+		return
 		}
 
 		snapshot.Name = endpoint.Name
@@ -263,16 +337,31 @@ func (d *Deps) staticSnapshot(w http.ResponseWriter, r *http.Request) error {
 	err = tx.Commit()
 	if err != nil {
 		tx.Rollback()
-		return err
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Header().Set("Content-Type", "application/json")
+		errBytes, err := json.Marshal(map[string]string{"error":err.Error()})
+		if err != nil {
+			w.Write([]byte(`{"error": "internal server error"}`))
+			return
+		}
+		w.Write(errBytes)
+		return
 	}
 
 	data, err := json.Marshal(snapshots)
 	if err != nil {
-		return err
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Header().Set("Content-Type", "application/json")
+		errBytes, err := json.Marshal(map[string]string{"error":err.Error()})
+		if err != nil {
+			w.Write([]byte(`{"error": "internal server error"}`))
+			return
+		}
+		w.Write(errBytes)
+		return
 	}
 
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
-	_, err = w.Write(data)
-	return err
+	w.Write(data)
 }

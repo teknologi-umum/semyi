@@ -32,7 +32,7 @@ func (d *Deps) WriteSnapshot(ctx context.Context, items []Response) error {
 			)
 			VALUES
 			(
-				$1, $2, $3, $4, $5, $6,
+				$1, $2, $3, $4, $5, $6
 			)`,
 			item.Endpoint.URL,
 			item.Endpoint.Timeout,

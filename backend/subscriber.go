@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"log"
+	"time"
 
 	"github.com/allegro/bigcache/v3"
 )
@@ -32,6 +33,12 @@ func (s *Subscriber) Listen(ctx context.Context) <-chan Response {
 	ch := make(chan Response)
 
 	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				log.Printf("Recovered from panic: %v", r)
+			}
+		}()
+		
 		for {
 			select {
 			case <-ctx.Done():
@@ -51,8 +58,9 @@ func (s *Subscriber) Listen(ctx context.Context) <-chan Response {
 					// send item to ch
 					ch <- item
 				}
-
 			}
+
+			time.Sleep(time.Second * 1)
 		}
 	}()
 
