@@ -8,9 +8,12 @@ WORKDIR /app
 COPY backend/ .
 RUN go build .
 
-FROM bullseye
+FROM debian:bullseye
+RUN apt-get update && apt-get upgrade -y && apt-get install -y sqlite3
 WORKDIR /app
+COPY config.json .
 COPY --from=backend /app/semya .
 COPY --from=frontend /app/dist .
 ENV STATIC_PATH=/app/dist
+EXPOSE ${PORT}
 CMD ["/app/semya"]

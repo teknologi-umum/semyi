@@ -1,0 +1,15 @@
+[
+    {
+        "name": "Digital Ocean",
+        "url": "https://status.digitalocean.com/",
+        "description": "The place where the whale stands",
+        "timeout": 60,
+        "interval": 10
+    },
+    {
+        "name": "Github",
+        "url": "https://github.com/healthz",
+        "description": "Github API",
+        "method": "GET"
+    }
+]
