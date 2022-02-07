@@ -4,11 +4,16 @@
   max-width: 960px;
 }
 
+.overview__display {
+  display: flex;
+}
+
 .overview__title {
   font-size: 2.5rem;
   font-family: "IBM Plex sans", sans-serif;
   font-weight: 800;
   margin: 2rem 0;
+  color: var(--color-black);
 }
 
 .overview__websites {

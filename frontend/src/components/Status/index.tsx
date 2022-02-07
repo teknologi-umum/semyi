@@ -45,7 +45,7 @@ export default function Status(props: StatusProps) {
             .map((_, i) => i)
             .reverse()}
         >
-          {(i) => (
+          {(i) =>
             <rect
               class="status__bar"
               width={barWidth()}
@@ -64,7 +64,7 @@ export default function Status(props: StatusProps) {
               rx={barRadius()}
               ry={barRadius()}
             />
-          )}
+          }
         </For>
       </svg>
     </div>
