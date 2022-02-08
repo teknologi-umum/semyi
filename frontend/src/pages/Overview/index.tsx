@@ -3,14 +3,14 @@ import WebsiteCard from "@/components/WebsiteCard";
 import FAKE_WEBSITES from "@/fake/fakeWebsites";
 import FAKE_SNAPSHOTS from "@/fake/fakeSnapshots";
 import { For } from "solid-js";
-import DarkMode from "@/components/DarkMode";
+import DarkModeToggle from "@/components/DarkModeToggle";
 
 export default function OverviewPage() {
   return (
     <div class={styles.overview}>
       <div class={styles.overview__display}>
         <h1 class={styles.overview__title}>Overview</h1>
-        <DarkMode />
+        <DarkModeToggle />
       </div>
 
       <div class={styles.overview__websites}>
