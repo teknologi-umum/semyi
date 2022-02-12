@@ -178,6 +178,7 @@ func (d *Deps) snapshotBy(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				log.Printf("failed to write data: %s", err)
 			}
+
 			flusher.Flush()
 		}
 	}

@@ -35,7 +35,7 @@ func (s *Subscriber) Listen(ctx context.Context) <-chan Response {
 	go func() {
 		defer func() {
 			if r := recover(); r != nil {
-				log.Printf("Recovered from panic: %v", r)
+				log.Printf("[Subscriber-Listen] Recovered from panic: %v", r)
 			}
 		}()
 
