@@ -9,6 +9,24 @@ docker run -d -p 5000:5000 -v ./config.json:/app/config.json semya:latest
 docker image prune
 ```
 
+Or if you prefer it as a docker-compose:
+
+```yaml
+uptime-monitor:
+    build: .
+    ports:
+        - 5000:5000
+    volumes:
+        - ./config.json:/app/config.json
+        - ./db.sqlite3:/app/db.sqlite3
+    environment:
+        DEFAULT_INTERVAL: 30
+        DEFAULT_TIMEOUT: 10
+        PORT: 5000    
+```
+
+There is another convinient way, by us creating a Github Docker package that you can directly pull (via ghcr.io), but that will be coming soon.
+
 ## License
 
 ```
