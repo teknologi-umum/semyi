@@ -15,5 +15,6 @@ COPY config.json .
 COPY --from=backend /app/semya .
 COPY --from=frontend /app/dist .
 ENV STATIC_PATH=/app/dist
+ENV ENV=production
 EXPOSE ${PORT}
 CMD ["/app/semya"]

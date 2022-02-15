@@ -126,9 +126,10 @@ func main() {
 		go func() {
 			defer func() {
 				if r := recover(); r != nil {
-					log.Printf("Recovered from panic: %v", r)
+					log.Printf("[Running worker] Recovered from panic: %v", r)
 				}
 			}()
+			
 			worker.Run()
 		}()
 
@@ -149,7 +150,7 @@ func main() {
 	go func() {
 		defer func() {
 			if r := recover(); r != nil {
-				log.Printf("Recovered from panic: %v", r)
+				log.Printf("[Dumping snapshot] Recovered from panic: %v", r)
 			}
 		}()
 
@@ -182,7 +183,7 @@ func main() {
 	go func() {
 		defer func() {
 			if r := recover(); r != nil {
-				log.Printf("Recovered from panic: %v", r)
+				log.Printf("[HTTP Server] Recovered from panic: %v", r)
 			}
 		}()
 
