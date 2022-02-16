@@ -10,7 +10,8 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      "@": resolve("src")
+      "@": resolve("src"),
+      "@config": resolve("..", "config.json")
     }
   }
 });
