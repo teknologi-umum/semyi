@@ -3,4 +3,5 @@ export interface Snapshot {
   statusCode: number;
   requestDuration: number;
   timestamp: number;
+  success: boolean;
 }
