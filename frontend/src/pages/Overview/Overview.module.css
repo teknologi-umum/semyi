@@ -18,9 +18,9 @@
 
 .overview__websites {
   border-radius: 0.25rem;
-  border: 2px solid #eaeaea;
+  border: 2px solid var(--color-border);
   display: flex;
   flex-direction: column;
-  background-color: #ffffff;
+  background-color: var(--color-white);
   box-shadow: 0 0.25rem 1rem rgba(0, 0, 0, 0.05);
 }

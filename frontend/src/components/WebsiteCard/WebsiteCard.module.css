@@ -12,7 +12,7 @@
   font-family: "IBM Plex Sans", sans-serif;
   font-size: 1.25rem;
   font-weight: 500;
-  color: #1e293b;
+  color: var(--color-black);
 }
 
 .website-card__url {
@@ -22,5 +22,5 @@
 }
 
 .website-card:not(:last-child) {
-  border-bottom: 2px solid #eaeaea;
+  border-bottom: 2px solid var(--color-border);
 }

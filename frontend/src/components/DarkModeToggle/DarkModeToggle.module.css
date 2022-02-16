@@ -15,7 +15,7 @@
 }
 
 .overview__slider {
-  background-color: #ccc;
+  background-color: var(--color-dark-bg);
   bottom: 0;
   cursor: pointer;
   left: 0;
@@ -27,7 +27,7 @@
 }
 
 .overview__slider:before {
-  background-color: #fff;
+  background-color: var(--color-white);
   bottom: 4px;
   content: "";
   height: 26px;
@@ -36,10 +36,6 @@
   transition: 0.4s;
   width: 26px;
   border-radius: 50%;
-}
-
-input:checked + .overview__slider {
-  background-color: #fec150;
 }
 
 input:checked + .overview__slider:before {
