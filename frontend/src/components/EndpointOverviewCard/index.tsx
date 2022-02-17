@@ -1,4 +1,4 @@
-import { map, Observable, reduce, take } from "rxjs";
+import { map, Observable, take } from "rxjs";
 import type { Response } from "@/types";
 import styles from "./styles.module.css";
 import { createMemo, createSignal, onMount } from "solid-js";
@@ -48,14 +48,8 @@ export default function EndpointOverviewCard(props: EndpointOverviewCard) {
 
   return (
     <div class={styles.overview}>
-      <h2 class={styles.overview__title}>
-        Overview for {props.name || "Endpoint Title"}
-      </h2>
+      <h2 class={styles.overview__title}>Overview</h2>
       <div class={styles.overview__content}>
-        <div class={styles["overview__content-item"]}>
-          <span class={styles["overview__item-label"]}>Uptime Rate</span>
-          <span class={styles["overview__item-value"]}>{uptimeRate()}%</span>
-        </div>
         <div class={styles["overview__content-item"]}>
           <span class={styles["overview__item-label"]}>Avg. Response Time</span>
           <span class={styles["overview__item-value"]}>{avgRespTime()}ms</span>
@@ -67,6 +61,10 @@ export default function EndpointOverviewCard(props: EndpointOverviewCard) {
         <div class={styles["overview__content-item"]}>
           <span class={styles["overview__item-label"]}>Min. Response Time</span>
           <span class={styles["overview__item-value"]}>{minRespTime()}ms</span>
+        </div>
+        <div class={styles["overview__content-item"]}>
+          <span class={styles["overview__item-label"]}>Uptime Rate</span>
+          <span class={styles["overview__item-value"]}>{uptimeRate()}%</span>
         </div>
       </div>
     </div>

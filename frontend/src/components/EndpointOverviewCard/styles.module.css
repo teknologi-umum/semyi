@@ -11,7 +11,6 @@
   font-weight: 500;
   color: var(--color-black);
   margin-bottom: 1.5rem;
-  text-align: center;
 }
 
 .overview__content {
@@ -25,7 +24,7 @@
   flex-direction: column;
   gap: 0.5rem;
   font-family: var(--font-heading);
-  padding: 1rem 1.5rem;
+  padding: 1rem;
   border-radius: 0.25rem;
 }
 

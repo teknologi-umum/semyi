@@ -1,11 +1,7 @@
-import SvgFeatherMoon from "@/assets/svgFeatherMoon";
-import SvgFeatherSun from "@/assets/svgFeatherSun";
+import { MoonIcon, SunIcon } from "@/icons";
 import styles from "./styles.module.css";
 
 export default function DarkModeToggle() {
-  const svgFeatherMoon = "feather " + styles.feather__moon;
-  const svgFeatherSun = "feather " + styles.feather__sun;
-
   const setTheme = (theme: "dark" | "light") => {
     localStorage.setItem("theme", theme);
     document.documentElement.setAttribute("data-theme", theme);
@@ -36,8 +32,8 @@ export default function DarkModeToggle() {
           checked={defaultDark}
         />
         <div class={styles.overview__slider}>
-          <SvgFeatherSun svg={svgFeatherSun} />
-          <SvgFeatherMoon svg={svgFeatherMoon} />
+          <SunIcon className={styles["sun-icon"]} />
+          <MoonIcon className={styles["moon-icon"]} />
         </div>
       </label>
     </div>

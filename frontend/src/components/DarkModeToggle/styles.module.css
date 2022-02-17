@@ -44,26 +44,26 @@ input:checked + .overview__slider:before {
   pointer-events: none;
 }
 
-.feather__moon {
+.moon-icon {
   opacity: 0;
   left: 0.5rem;
   bottom: 0.5rem;
   transform: translateX(0.25rem);
 }
 
-.feather__sun {
+.sun-icon {
   opacity: 1;
   right: 10px;
   bottom: 9px;
   transform: translateX(0px);
 }
 
-input:checked + .overview__slider .feather__moon {
+input:checked + .overview__slider .moon-icon {
   opacity: 1;
   transform: translateX(0);
 }
 
-input:checked + .overview__slider .feather__sun {
+input:checked + .overview__slider .sun-icon {
   opacity: 0;
   transform: translateX(-4px);
 }

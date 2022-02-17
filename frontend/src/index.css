@@ -42,5 +42,6 @@
 body {
   background-color: var(--color-bg);
   color: var(--color-black);
+  padding: 0 0 4rem;
 }
 
