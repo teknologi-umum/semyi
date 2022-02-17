@@ -1,16 +1,16 @@
 import type { Snapshot } from "@/types/Snapshot";
 import Status from "@/components/Status";
-import styles from "./EndpointCard.module.css";
+import styles from "./EndpointStatusCard.module.css";
 import { createSignal, onMount } from "solid-js";
 import { fromEvent, map, take } from "rxjs";
 import { Link } from "solid-app-router";
 
-interface EndpointCardProps {
+interface EndpointStatusCardProps {
   name: string;
   url: string;
 }
 
-export default function EndpointCard(props: EndpointCardProps) {
+export default function EndpointStatusCard(props: EndpointStatusCardProps) {
   const [snapshot, setSnapshot] = createSignal<Snapshot[]>([]);
 
   onMount(async () => {
