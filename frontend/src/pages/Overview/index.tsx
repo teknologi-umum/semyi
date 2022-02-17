@@ -1,10 +1,15 @@
 import styles from "./Overview.module.css";
 import EndpointStatusCard from "@/components/EndpointStatusCard";
-import { For } from "solid-js";
+import { createResource, For } from "solid-js";
 import DarkModeToggle from "@/components/DarkModeToggle";
 import config from "@config";
+import { fetchAllStaticSnapshots } from "@/utils/fetchStaticSnapshots";
 
 export default function OverviewPage() {
+  const [staticSnapshot] = createResource(async () =>
+    fetchAllStaticSnapshots(config.map((c) => c.url))
+  );
+
   return (
     <div class={styles.overview}>
       <div class={styles.overview__header}>
@@ -13,8 +18,14 @@ export default function OverviewPage() {
       </div>
 
       <div class={styles.overview__endpoints}>
-        <For each={config}>
-          {({ name, url }) => <EndpointStatusCard name={name} url={url} />}
+        <For each={staticSnapshot()}>
+          {(snapshot) => (
+            <EndpointStatusCard
+              name={snapshot[0].name}
+              url={snapshot[0].url}
+              staticSnapshot={snapshot}
+            />
+          )}
         </For>
       </div>
     </div>

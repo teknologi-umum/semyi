@@ -5,6 +5,8 @@ import EndpointOverviewCard from "@/components/EndpointOverviewCard";
 import styles from "./Detail.module.css";
 import config from "@config";
 import type { Endpoint } from "@/types/Endpoint";
+import { fetchSingleStaticSnapshot } from "@/utils/fetchStaticSnapshots";
+import { createResource } from "solid-js";
 
 export default function DetailPage() {
   const [searchParams] = useSearchParams();
@@ -21,6 +23,14 @@ export default function DetailPage() {
     return <Navigate href="/" />;
   }
 
+  const [staticSnapshot] = createResource(async () =>
+    fetchSingleStaticSnapshot(endpoint.url)
+  );
+
+  if (staticSnapshot === undefined) {
+    return <Navigate href="/" />;
+  }
+
   return (
     <div class={styles.detail}>
       <div class={styles.detail__header}>
@@ -33,7 +43,11 @@ export default function DetailPage() {
         <DarkModeToggle />
       </div>
       <div class={styles.detail__body}>
-        <EndpointStatusCard name={endpoint.name} url={endpoint.url} />
+        <EndpointStatusCard
+          name={endpoint.name}
+          url={endpoint.url}
+          staticSnapshot={staticSnapshot()!}
+        />
         <EndpointOverviewCard name={endpoint.name} />
       </div>
     </div>

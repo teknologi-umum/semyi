@@ -8,17 +8,15 @@ import { Link } from "solid-app-router";
 interface EndpointStatusCardProps {
   name: string;
   url: string;
+  staticSnapshot: Snapshot[];
 }
 
 export default function EndpointStatusCard(props: EndpointStatusCardProps) {
-  const [snapshot, setSnapshot] = createSignal<Snapshot[]>([]);
+  const [snapshot, setSnapshot] = createSignal<Snapshot[]>(
+    props.staticSnapshot
+  );
 
   onMount(async () => {
-    const staticSnapshot: Snapshot[] = await fetch(
-      import.meta.env.VITE_BASE_URL + "/api/static?url=" + props.url
-    ).then((r) => r.json());
-    setSnapshot(staticSnapshot);
-
     const source = new EventSource(
       import.meta.env.VITE_BASE_URL + "/api/by?url=" + props.url
     );
