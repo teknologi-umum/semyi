@@ -1,14 +1,13 @@
+import { fromEvent, map } from "rxjs";
 import { Link, Navigate, useSearchParams } from "solid-app-router";
-import EndpointStatusCard from "@/components/EndpointStatusCard";
+import { createResource, Match, Switch } from "solid-js";
 import DarkModeToggle from "@/components/DarkModeToggle";
 import EndpointOverviewCard from "@/components/EndpointOverviewCard";
-import styles from "./styles.module.css";
+import EndpointStatusCard from "@/components/EndpointStatusCard";
+import { fetchSingleStaticSnapshot } from "@/utils/fetcher";
+import type { Response, Endpoint } from "@/types";
 import config from "@config";
-import type { Endpoint } from "@/types/Endpoint";
-import type { Response } from "@/types/Response";
-import { fetchSingleStaticSnapshot } from "@/utils/fetchStaticSnapshots";
-import { createResource, Match, Switch } from "solid-js";
-import { fromEvent, map } from "rxjs";
+import styles from "./styles.module.css";
 
 export default function DetailPage() {
   const [searchParams] = useSearchParams();

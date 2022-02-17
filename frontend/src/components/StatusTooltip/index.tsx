@@ -1,5 +1,5 @@
-import { Snapshot } from "@/types/Snapshot";
 import { Show } from "solid-js";
+import type { Snapshot } from "@/types";
 import styles from "./styles.module.css";
 
 interface TooltipProps {

@@ -1,6 +1,6 @@
-import styles from "./styles.module.css";
-import type { Response } from "@/types/Response";
 import { Observable } from "rxjs";
+import type { Response } from "@/types";
+import styles from "./styles.module.css";
 
 interface EndpointOverviewCard {
   name: string;

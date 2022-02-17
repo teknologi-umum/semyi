@@ -1,6 +1,6 @@
 import { createMemo, createSignal, For, onMount } from "solid-js";
 import Tooltip from "@/components/StatusTooltip";
-import type { Response } from "@/types/Response";
+import type { Response } from "@/types";
 import styles from "./styles.module.css";
 
 interface StatusProps {

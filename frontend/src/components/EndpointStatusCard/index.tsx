@@ -1,9 +1,9 @@
-import Status from "@/components/Status";
-import styles from "./styles.module.css";
-import { createSignal, onMount } from "solid-js";
 import { map, Observable, take } from "rxjs";
 import { Link } from "solid-app-router";
-import type { Response } from "@/types/Response";
+import { createSignal, onMount } from "solid-js";
+import Status from "@/components/Status";
+import type { Response } from "@/types";
+import styles from "./styles.module.css";
 
 interface EndpointStatusCardProps {
   name: string;

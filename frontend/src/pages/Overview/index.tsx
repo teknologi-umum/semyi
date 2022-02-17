@@ -1,11 +1,11 @@
-import styles from "./styles.module.css";
-import EndpointStatusCard from "@/components/EndpointStatusCard";
+import { fromEvent, map } from "rxjs";
 import { createResource, For, Match, Switch } from "solid-js";
 import DarkModeToggle from "@/components/DarkModeToggle";
+import EndpointStatusCard from "@/components/EndpointStatusCard";
+import { fetchAllStaticSnapshots } from "@/utils/fetcher";
+import type { Response } from "@/types";
 import config from "@config";
-import { fetchAllStaticSnapshots } from "@/utils/fetchStaticSnapshots";
-import { fromEvent, map } from "rxjs";
-import type { Response } from "@/types/Response";
+import styles from "./styles.module.css";
 
 export default function OverviewPage() {
   const [staticSnapshot] = createResource(() =>
