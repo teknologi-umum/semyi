@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"log"
 	"time"
@@ -51,6 +52,25 @@ func (s *Subscriber) Listen(ctx context.Context) <-chan Response {
 						continue
 					}
 					log.Println("Error dequeueing item from queue:", err)
+					continue
+				}
+
+				// check if current item is in cache
+				cached, err := s.cache.Get(item.URL)
+				if err != nil {
+					// TODO(elianiva): proper error handling
+					log.Println("Error getting cached item")
+					continue
+				}
+
+				itemStr, err := json.Marshal(item)
+				if err != nil {
+					// TODO(elianiva): proper error handling
+					log.Println("Error marshalling")
+					continue
+				}
+
+				if string(itemStr) == string(cached) {
 					continue
 				}
 
