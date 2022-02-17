@@ -37,6 +37,9 @@ export default function Status(props: StatusProps) {
     const target = e.target as Element;
     if (target.tagName !== "rect") return;
 
+    const isValid = target.getAttribute("data-isValid");
+    if (isValid === null || isValid === "false") return;
+
     const idx = target.getAttribute("data-index");
     if (idx === null) return;
 
@@ -53,27 +56,38 @@ export default function Status(props: StatusProps) {
         class={styles.overlay}
         style={{
           left:
-            (hoveredSnapshotIndex() !== null
-              ? (hoveredSnapshotIndex() as number) * (barWidth() + GAP)
-              : -99999) + "px",
+            hoveredSnapshotIndex() !== null &&
+            (hoveredSnapshotIndex() as number) * (barWidth() + GAP) + "px",
+          transform: hoveredSnapshotIndex() !== null ? "scale(1)" : "scale(0)",
           visiblity: hoveredSnapshotIndex() !== null ? "visible" : "hidden",
           opacity: hoveredSnapshotIndex() !== null ? 1 : 0
         }}
       >
-        <span class={styles["overlay-date"]}>
-          {new Date(
-            props.snapshots[hoveredSnapshotIndex()!]?.timestamp
-          ).toLocaleTimeString("en-UK", {
-            day: "numeric",
-            month: "short",
-            year: "numeric",
-            hour: "numeric",
-            minute: "numeric",
-            second: "numeric"
-          })}
+        <div class={styles.overlay__datetime}>
+          <span class={styles.overlay__date}>
+            {new Date(
+              props.snapshots[hoveredSnapshotIndex()!]?.timestamp
+            ).toLocaleDateString("en-GB", {
+              day: "numeric",
+              month: "short",
+              year: "numeric"
+            })}
+          </span>
+          <span class={styles.overlay__time}>
+            {new Date(
+              props.snapshots[hoveredSnapshotIndex()!]?.timestamp
+            ).toLocaleTimeString("en-GB", {
+              hour: "numeric",
+              minute: "numeric",
+              second: "numeric"
+            })}
+          </span>
+        </div>
+        <span class={styles["overlay__response-time"]}>
+          Duration: {props.snapshots[hoveredSnapshotIndex()!]?.requestDuration}ms
         </span>
-        <span class={styles["overlay-response-time"]}>
-          {props.snapshots[hoveredSnapshotIndex()!]?.requestDuration}ms
+        <span class={styles["overlay__response-time"]}>
+          Status Code: {props.snapshots[hoveredSnapshotIndex()!]?.statusCode}
         </span>
       </div>
       <div
@@ -98,7 +112,8 @@ export default function Status(props: StatusProps) {
             {(i) => (
               <rect
                 data-index={i}
-                class="status__bar"
+                data-isValid={props.snapshots[i]?.statusCode !== undefined}
+                class={styles.status__bar}
                 width={barWidth()}
                 height={CONTAINER_HEIGHT}
                 x={i * (barWidth() + GAP)}

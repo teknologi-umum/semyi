@@ -5,25 +5,39 @@
   position: relative;
 }
 
+.status__bar:hover {
+  filter: brightness(1.2);
+}
+
 .overlay {
   position: absolute;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
   padding: 1rem;
-  background-color: var(--color-white);
+  background-color: var(--color-black);
+  color: var(--color-white);
   z-index: 10;
   border-radius: 0.25rem;
   transform: translateX(-50%);
   top: -3rem;
-  min-width: 10rem;
+  min-width: 14rem;
   white-space: nowrap;
-  border: 2px solid var(--color-border);
-  text-align: center;
   box-shadow: 0 0.25rem 1.25rem rgba(0, 0, 0, 0.25);
-  transition: opacity 0.1s ease-out;
+  transition: opacity 0.1s ease-out,
+              transform 0.1s ease-out;
 }
 
-.overlay-date,
-.overlay-response-time {
+.overlay__datetime {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--color-gray);
+}
+
+.overlay__date,
+.overlay__time,
+.overlay__response-time {
   display: block;
   font-family: "IBM Plex sans", sans-serif;
-  color: var(--color-black);
 }
