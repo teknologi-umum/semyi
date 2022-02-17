@@ -9,14 +9,15 @@
 }
 
 .website-card__title {
-  font-family: "IBM Plex Sans", sans-serif;
+  font-family: var(--font-heading);
   font-size: 1.25rem;
   font-weight: 500;
   color: var(--color-black);
+  text-decoration: none;
 }
 
 .website-card__url {
-  font-family: "Libre Franklin", sans-serif;
+  font-family: var(--font-body);
   font-size: 1rem;
   color: var(--color-gray);
 }

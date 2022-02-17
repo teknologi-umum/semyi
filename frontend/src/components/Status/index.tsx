@@ -1,5 +1,6 @@
-import type { Snapshot } from "@/types/Snapshot";
 import { createMemo, createSignal, For, onMount } from "solid-js";
+import Tooltip from "@/components/StatusTooltip";
+import type { Snapshot } from "@/types/Snapshot";
 import styles from "./Status.module.css";
 
 interface StatusProps {
@@ -52,44 +53,12 @@ export default function Status(props: StatusProps) {
 
   return (
     <>
-      <div
-        class={styles.overlay}
-        style={{
-          left:
-            hoveredSnapshotIndex() !== null &&
-            (hoveredSnapshotIndex() as number) * (barWidth() + GAP) + "px",
-          transform: hoveredSnapshotIndex() !== null ? "scale(1)" : "scale(0)",
-          visiblity: hoveredSnapshotIndex() !== null ? "visible" : "hidden",
-          opacity: hoveredSnapshotIndex() !== null ? 1 : 0
-        }}
-      >
-        <div class={styles.overlay__datetime}>
-          <span class={styles.overlay__date}>
-            {new Date(
-              props.snapshots[hoveredSnapshotIndex()!]?.timestamp
-            ).toLocaleDateString("en-GB", {
-              day: "numeric",
-              month: "short",
-              year: "numeric"
-            })}
-          </span>
-          <span class={styles.overlay__time}>
-            {new Date(
-              props.snapshots[hoveredSnapshotIndex()!]?.timestamp
-            ).toLocaleTimeString("en-GB", {
-              hour: "numeric",
-              minute: "numeric",
-              second: "numeric"
-            })}
-          </span>
-        </div>
-        <span class={styles["overlay__response-time"]}>
-          Duration: {props.snapshots[hoveredSnapshotIndex()!]?.requestDuration}ms
-        </span>
-        <span class={styles["overlay__response-time"]}>
-          Status Code: {props.snapshots[hoveredSnapshotIndex()!]?.statusCode}
-        </span>
-      </div>
+      <Tooltip
+        isVisible={hoveredSnapshotIndex() !== null}
+        snapshotIndex={hoveredSnapshotIndex()!}
+        snapshot={props.snapshots[hoveredSnapshotIndex()!]}
+        left={(hoveredSnapshotIndex() as number) * (barWidth() + GAP)}
+      />
       <div
         class={styles.status}
         ref={container}

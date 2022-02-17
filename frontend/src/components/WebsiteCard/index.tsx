@@ -3,6 +3,7 @@ import Status from "@/components/Status";
 import styles from "./WebsiteCard.module.css";
 import { createSignal, onMount } from "solid-js";
 import { fromEvent, map, take } from "rxjs";
+import { Link } from "solid-app-router";
 
 interface WebsiteCardProps {
   name: string;
@@ -35,7 +36,12 @@ export default function WebsiteCard(props: WebsiteCardProps) {
     <div class={styles["website-card"]}>
       <div class={styles["website-card__content"]}>
         <div class={styles["website-card__header"]}>
-          <span class={styles["website-card__title"]}>{props.name}</span>
+          <Link
+            class={styles["website-card__title"]}
+            href={"/by?name=" + props.name}
+          >
+            {props.name}
+          </Link>
           <a class={styles["website-card__url"]} href={props.url}>
             {props.url}
           </a>
