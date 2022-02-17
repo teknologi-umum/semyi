@@ -18,7 +18,7 @@ export default function Tooltip(props: TooltipProps) {
         transform:
           (props.snapshotIndex !== null ? "scale(1)" : "scale(0)") +
           " transformX(-50%)",
-        visiblity: props.snapshotIndex !== null ? "visible" : "hidden",
+        visibility: props.snapshotIndex !== null ? "visible" : "hidden",
         opacity: props.snapshotIndex !== null ? 1 : 0
       }}
     >
