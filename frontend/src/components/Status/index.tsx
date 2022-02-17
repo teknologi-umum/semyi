@@ -93,7 +93,7 @@ export default function Status(props: StatusProps) {
                     ? props.snapshots[i].statusCode === 200
                       ? "var(--color-emerald)"
                       : "var(--color-red)"
-                    : "var(--color-light-gray)"
+                    : "var(--color-lighter-gray)"
                 }
                 fill-opacity="1"
                 rx={barRadius()}

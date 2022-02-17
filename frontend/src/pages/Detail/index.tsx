@@ -4,6 +4,7 @@ import { createResource, Match, Switch } from "solid-js";
 import DarkModeToggle from "@/components/DarkModeToggle";
 import EndpointOverviewCard from "@/components/EndpointOverviewCard";
 import EndpointStatusCard from "@/components/EndpointStatusCard";
+import Loading from "@/components/Loading";
 import { fetchSingleStaticSnapshot } from "@/utils/fetcher";
 import type { Response, Endpoint } from "@/types";
 import config from "@config";
@@ -45,7 +46,7 @@ export default function DetailPage() {
         </div>
         <DarkModeToggle />
       </div>
-      <Switch fallback={<div>Loading...</div>}>
+      <Switch fallback={<Loading />}>
         <Match when={!staticSnapshot.loading}>
           <div class={styles.detail__body}>
             <EndpointStatusCard
