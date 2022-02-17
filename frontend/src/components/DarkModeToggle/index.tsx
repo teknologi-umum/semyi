@@ -1,6 +1,6 @@
 import SvgFeatherMoon from "@/assets/svgFeatherMoon";
 import SvgFeatherSun from "@/assets/svgFeatherSun";
-import styles from "./DarkModeToggle.module.css";
+import styles from "./styles.module.css";
 
 export default function DarkModeToggle() {
   const svgFeatherMoon = "feather " + styles.feather__moon;

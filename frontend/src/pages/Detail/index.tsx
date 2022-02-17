@@ -2,7 +2,7 @@ import { Link, Navigate, useSearchParams } from "solid-app-router";
 import EndpointStatusCard from "@/components/EndpointStatusCard";
 import DarkModeToggle from "@/components/DarkModeToggle";
 import EndpointOverviewCard from "@/components/EndpointOverviewCard";
-import styles from "./Detail.module.css";
+import styles from "./styles.module.css";
 import config from "@config";
 import type { Endpoint } from "@/types/Endpoint";
 import type { Response } from "@/types/Response";

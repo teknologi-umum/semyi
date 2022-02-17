@@ -1,6 +1,6 @@
 import { Snapshot } from "@/types/Snapshot";
 import { Show } from "solid-js";
-import styles from "./Tooltip.module.css";
+import styles from "./styles.module.css";
 
 interface TooltipProps {
   isVisible: boolean;

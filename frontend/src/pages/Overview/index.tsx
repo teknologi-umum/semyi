@@ -1,4 +1,4 @@
-import styles from "./Overview.module.css";
+import styles from "./styles.module.css";
 import EndpointStatusCard from "@/components/EndpointStatusCard";
 import { createResource, For, Match, Switch } from "solid-js";
 import DarkModeToggle from "@/components/DarkModeToggle";

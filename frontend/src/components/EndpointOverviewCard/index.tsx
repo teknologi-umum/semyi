@@ -1,4 +1,4 @@
-import styles from "./EndpointOverviewCard.module.css";
+import styles from "./styles.module.css";
 import type { Response } from "@/types/Response";
 import { Observable } from "rxjs";
 
