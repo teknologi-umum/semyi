@@ -3,7 +3,7 @@ import { createResource, For, Match, Switch } from "solid-js";
 import DarkModeToggle from "@/components/DarkModeToggle";
 import EndpointStatusCard from "@/components/EndpointStatusCard";
 import { fetchAllStaticSnapshots } from "@/utils/fetcher";
-import Loading from "@/components/Loading";
+import Notice from "@/components/Notice";
 import type { Response } from "@/types";
 import config from "@config";
 import styles from "./styles.module.css";
@@ -20,7 +20,7 @@ export default function OverviewPage() {
         <DarkModeToggle />
       </div>
 
-      <Switch fallback={<Loading />}>
+      <Switch fallback={<Notice text="Loading..." />}>
         <Match when={!staticSnapshot.loading}>
           <div class={styles.overview__endpoints}>
             <For each={staticSnapshot()}>
@@ -48,7 +48,7 @@ export default function OverviewPage() {
           </div>
         </Match>
         <Match when={staticSnapshot.error !== undefined}>
-          <h1>Error while fetching</h1>
+          <Notice text="Error while fetching. Try checking the console." />
         </Match>
       </Switch>
     </div>
