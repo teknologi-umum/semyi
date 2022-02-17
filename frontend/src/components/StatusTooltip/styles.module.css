@@ -8,13 +8,24 @@
   color: var(--color-white);
   z-index: 10;
   border-radius: 0.25rem;
-  transform: translateX(-50%);
-  top: -4rem;
-  min-width: 14rem;
+  bottom: 5rem;
+  width: 14rem;
   white-space: nowrap;
   box-shadow: 0 0.25rem 1.25rem rgba(0, 0, 0, 0.25);
   transition: opacity 0.1s ease-out,
               transform 0.1s ease-out;
+}
+
+.tooltip::before {
+  content: "";
+  position: absolute;
+  left: 5.5rem;
+  bottom: -0.25rem;
+  transform: rotateZ(45deg);
+  width: 3rem;
+  height: 3rem;
+  background-color: var(--color-black);
+  border-radius: 0.25rem;
 }
 
 .tooltip__datetime {
@@ -24,9 +35,11 @@
   color: var(--color-gray);
 }
 
+.tooltip__placeholder,
 .tooltip__date,
 .tooltip__time,
 .tooltip__response-time {
   display: block;
   font-family: var(--font-heading);
+  z-index: 10;
 }

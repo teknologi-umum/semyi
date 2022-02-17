@@ -21,6 +21,8 @@
   --color-red: #ef4444;
   --color-sky: #0284c7;
   --color-border: #e5e7eb;
+
+  --filter-brightness: brightness(0.9);
 }
 
 [data-theme="dark"] {
@@ -34,6 +36,8 @@
   --color-red: #f87171;
   --color-sky: #0ea5e9;
   --color-border: #374151;
+
+  --filter-brightness: brightness(1.1);
 }
 
 body {

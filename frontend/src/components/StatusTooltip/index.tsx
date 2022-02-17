@@ -1,4 +1,4 @@
-import { Show } from "solid-js";
+import { Match, Switch } from "solid-js";
 import type { Snapshot } from "@/types";
 import styles from "./styles.module.css";
 
@@ -14,38 +14,42 @@ export default function Tooltip(props: TooltipProps) {
     <div
       class={styles.tooltip}
       style={{
-        left: props.snapshotIndex !== null && props.left + "px",
-        transform:
-          (props.snapshotIndex !== null ? "scale(1)" : "scale(0)") +
-          " transformX(-50%)",
-        visibility: props.snapshotIndex !== null ? "visible" : "hidden",
-        opacity: props.snapshotIndex !== null ? 1 : 0
+        // minus 7 rem because we want to make it centered
+        left: props.isVisible && props.left - 5 * 16 + "px",
+        transform: props.isVisible ? "scale(1)" : "scale(0)",
+        opacity: props.isVisible ? 1 : 0,
+        visibility: props.isVisible ? "visible" : "hidden"
       }}
     >
-      <div class={styles.tooltip__datetime}>
-        <Show when={props.snapshot !== undefined}>
-          <span class={styles.tooltip__date}>
-            {new Date(props.snapshot!.timestamp).toLocaleDateString("en-GB", {
-              day: "numeric",
-              month: "short",
-              year: "numeric"
-            })}
+      <Switch>
+        <Match when={props.snapshot === undefined}>
+          <span class={styles.tooltip__placeholder}>No Data Available Yet</span>
+        </Match>
+        <Match when={props.snapshot !== undefined}>
+          <div class={styles.tooltip__datetime}>
+            <span class={styles.tooltip__date}>
+              {new Date(props.snapshot!.timestamp).toLocaleDateString("en-GB", {
+                day: "numeric",
+                month: "short",
+                year: "numeric"
+              })}
+            </span>
+            <span class={styles.tooltip__time}>
+              {new Date(props.snapshot!.timestamp).toLocaleTimeString("en-GB", {
+                hour: "numeric",
+                minute: "numeric",
+                second: "numeric"
+              })}
+            </span>
+          </div>
+          <span class={styles["tooltip__response-time"]}>
+            Duration: {props.snapshot?.requestDuration}ms
           </span>
-          <span class={styles.tooltip__time}>
-            {new Date(props.snapshot!.timestamp).toLocaleTimeString("en-GB", {
-              hour: "numeric",
-              minute: "numeric",
-              second: "numeric"
-            })}
+          <span class={styles["tooltip__response-time"]}>
+            Status Code: {props.snapshot?.statusCode}
           </span>
-        </Show>
-      </div>
-      <span class={styles["tooltip__response-time"]}>
-        Duration: {props.snapshot?.requestDuration}ms
-      </span>
-      <span class={styles["tooltip__response-time"]}>
-        Status Code: {props.snapshot?.statusCode}
-      </span>
+        </Match>
+      </Switch>
     </div>
   );
 }

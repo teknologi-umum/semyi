@@ -38,9 +38,6 @@ export default function Status(props: StatusProps) {
     const target = e.target as Element;
     if (target.tagName !== "rect") return;
 
-    const isValid = target.getAttribute("data-isValid");
-    if (isValid === null || isValid === "false") return;
-
     const idx = target.getAttribute("data-index");
     if (idx === null) return;
 
@@ -85,7 +82,6 @@ export default function Status(props: StatusProps) {
             {(i) => (
               <rect
                 data-index={i}
-                data-isValid={props.snapshots[i]?.statusCode !== undefined}
                 class={styles.status__bar}
                 width={barWidth()}
                 height={CONTAINER_HEIGHT}
