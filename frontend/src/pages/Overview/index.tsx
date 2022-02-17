@@ -1,5 +1,5 @@
 import { fromEvent, map } from "rxjs";
-import { createResource, For, Match, Switch } from "solid-js";
+import { createResource, For, Match, onMount, Switch } from "solid-js";
 import DarkModeToggle from "@/components/DarkModeToggle";
 import EndpointStatusCard from "@/components/EndpointStatusCard";
 import { fetchAllStaticSnapshots } from "@/utils/fetcher";
@@ -12,6 +12,10 @@ export default function OverviewPage() {
   const [staticSnapshot] = createResource(() =>
     fetchAllStaticSnapshots(config.map((c) => c.url))
   );
+
+  onMount(() => {
+    document.title = "Overview | Semya";
+  });
 
   return (
     <div class={styles.overview}>

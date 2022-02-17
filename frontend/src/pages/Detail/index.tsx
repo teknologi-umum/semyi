@@ -1,6 +1,6 @@
 import { fromEvent, map } from "rxjs";
 import { Link, Navigate, useSearchParams } from "solid-app-router";
-import { createResource, Match, Switch } from "solid-js";
+import { createResource, Match, onMount, Switch } from "solid-js";
 import DarkModeToggle from "@/components/DarkModeToggle";
 import EndpointOverviewCard from "@/components/EndpointOverviewCard";
 import EndpointStatusCard from "@/components/EndpointStatusCard";
@@ -35,6 +35,10 @@ export default function DetailPage() {
     source,
     "message"
   ).pipe(map((event) => JSON.parse(event.data) as Response));
+
+  onMount(() => {
+    document.title = `Status for ${endpoint.name} | Semya`;
+  });
 
   return (
     <div class={styles.detail}>
