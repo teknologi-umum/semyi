@@ -1,15 +1,10 @@
 import styles from "./Overview.module.css";
 import WebsiteCard from "@/components/WebsiteCard";
-import FAKE_SNAPSHOTS from "@/fake/fakeSnapshots";
-import { For, onMount } from "solid-js";
+import { For } from "solid-js";
 import DarkModeToggle from "@/components/DarkModeToggle";
 import config from "@config";
 
 export default function OverviewPage() {
-  onMount(() => {
-    console.log(config);
-  });
-
   return (
     <div class={styles.overview}>
       <div class={styles.overview__display}>
@@ -19,13 +14,7 @@ export default function OverviewPage() {
 
       <div class={styles.overview__websites}>
         <For each={config}>
-          {({ name, url }) => (
-            <WebsiteCard
-              name={name}
-              url={url}
-              snapshots={FAKE_SNAPSHOTS[name]}
-            />
-          )}
+          {({ name, url }) => <WebsiteCard name={name} url={url} />}
         </For>
       </div>
     </div>

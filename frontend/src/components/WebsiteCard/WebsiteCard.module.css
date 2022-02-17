@@ -24,3 +24,7 @@
 .website-card:not(:last-child) {
   border-bottom: 2px solid var(--color-border);
 }
+
+.website-card__content {
+  position: relative;
+}

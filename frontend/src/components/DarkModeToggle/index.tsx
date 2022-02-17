@@ -3,8 +3,8 @@ import SvgFeatherSun from "@/assets/svgFeatherSun";
 import styles from "./DarkModeToggle.module.css";
 
 export default function DarkModeToggle() {
-  const svgFeatherMoon = "feather".concat(" ", styles.feather__moon);
-  const svgFeatherSun = "feather".concat(" ", styles.feather__sun);
+  const svgFeatherMoon = "feather " + styles.feather__moon;
+  const svgFeatherSun = "feather " + styles.feather__sun;
 
   const setTheme = (theme: "dark" | "light") => {
     localStorage.setItem("theme", theme);
