@@ -7,7 +7,7 @@ import config from "@config";
 export default function OverviewPage() {
   return (
     <div class={styles.overview}>
-      <div class={styles.overview__display}>
+      <div class={styles.overview__header}>
         <h1 class={styles.overview__title}>Overview</h1>
         <DarkModeToggle />
       </div>

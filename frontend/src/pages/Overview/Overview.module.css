@@ -4,8 +4,10 @@
   max-width: 960px;
 }
 
-.overview__display {
+.overview__header {
   display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .overview__title {
