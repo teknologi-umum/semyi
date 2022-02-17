@@ -1,10 +1,10 @@
 import { createMemo, createSignal, For, onMount } from "solid-js";
 import Tooltip from "@/components/StatusTooltip";
-import type { Snapshot } from "@/types/Snapshot";
+import type { Response } from "@/types/Response";
 import styles from "./Status.module.css";
 
 interface StatusProps {
-  snapshots: Snapshot[];
+  snapshots: Response[];
 }
 
 export default function Status(props: StatusProps) {

@@ -5,12 +5,13 @@ import EndpointOverviewCard from "@/components/EndpointOverviewCard";
 import styles from "./Detail.module.css";
 import config from "@config";
 import type { Endpoint } from "@/types/Endpoint";
+import type { Response } from "@/types/Response";
 import { fetchSingleStaticSnapshot } from "@/utils/fetchStaticSnapshots";
-import { createResource } from "solid-js";
+import { createResource, Match, Switch } from "solid-js";
+import { fromEvent, map } from "rxjs";
 
 export default function DetailPage() {
   const [searchParams] = useSearchParams();
-
   if (searchParams.name === "") {
     return <Navigate href="/" />;
   }
@@ -18,18 +19,21 @@ export default function DetailPage() {
   const endpoint: Endpoint | undefined = config.find(
     ({ name }) => name === decodeURIComponent(searchParams.name)
   );
-
   if (endpoint === undefined) {
     return <Navigate href="/" />;
   }
 
-  const [staticSnapshot] = createResource(async () =>
+  const [staticSnapshot] = createResource(() =>
     fetchSingleStaticSnapshot(endpoint.url)
   );
 
-  if (staticSnapshot === undefined) {
-    return <Navigate href="/" />;
-  }
+  const source = new EventSource(
+    import.meta.env.VITE_BASE_URL + "/api/by?url=" + endpoint.url
+  );
+  const snapshotStream$ = fromEvent<MessageEvent<string>>(
+    source,
+    "message"
+  ).pipe(map((event) => JSON.parse(event.data) as Response));
 
   return (
     <div class={styles.detail}>
@@ -42,14 +46,26 @@ export default function DetailPage() {
         </div>
         <DarkModeToggle />
       </div>
-      <div class={styles.detail__body}>
-        <EndpointStatusCard
-          name={endpoint.name}
-          url={endpoint.url}
-          staticSnapshot={staticSnapshot()!}
-        />
-        <EndpointOverviewCard name={endpoint.name} />
-      </div>
+      <Switch fallback={<div>Loading...</div>}>
+        <Match when={!staticSnapshot.loading}>
+          <div class={styles.detail__body}>
+            <EndpointStatusCard
+              name={endpoint.name}
+              url={endpoint.url}
+              staticSnapshot={staticSnapshot()}
+              snapshotStream$={snapshotStream$}
+            />
+            <EndpointOverviewCard
+              name={endpoint.name}
+              staticSnapshot={staticSnapshot()}
+              snapshotStream$={snapshotStream$}
+            />
+          </div>
+        </Match>
+        <Match when={staticSnapshot.error !== undefined}>
+          <h1>Error while fetching</h1>
+        </Match>
+      </Switch>
     </div>
   );
 }

@@ -13,6 +13,7 @@ export async function fetchAllStaticSnapshots(urls: string[]) {
     return response;
   } catch (err) {
     console.error(err);
+    throw err;
   }
 }
 
@@ -25,5 +26,6 @@ export async function fetchSingleStaticSnapshot(url: string) {
     return response;
   } catch (err) {
     console.error(err);
+    throw err;
   }
 }

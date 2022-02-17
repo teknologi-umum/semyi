@@ -1,30 +1,26 @@
-import type { Snapshot } from "@/types/Snapshot";
 import Status from "@/components/Status";
 import styles from "./EndpointStatusCard.module.css";
 import { createSignal, onMount } from "solid-js";
-import { fromEvent, map, take } from "rxjs";
+import { map, Observable, take } from "rxjs";
 import { Link } from "solid-app-router";
+import type { Response } from "@/types/Response";
 
 interface EndpointStatusCardProps {
   name: string;
   url: string;
-  staticSnapshot: Snapshot[];
+  staticSnapshot: Response[] | undefined;
+  snapshotStream$: Observable<Response>;
 }
 
 export default function EndpointStatusCard(props: EndpointStatusCardProps) {
-  const [snapshot, setSnapshot] = createSignal<Snapshot[]>(
-    props.staticSnapshot
+  const [snapshot, setSnapshot] = createSignal<Response[]>(
+    props.staticSnapshot || []
   );
 
   onMount(async () => {
-    const source = new EventSource(
-      import.meta.env.VITE_BASE_URL + "/api/by?url=" + props.url
-    );
-    fromEvent<MessageEvent<string>>(source, "message")
+    props.snapshotStream$
       .pipe(
-        map((event) => JSON.parse(event.data) as Snapshot),
-        // eslint-disable-next-line solid/reactivity
-        map((s) => snapshot().concat(s)),
+        map((newSnapshot) => snapshot().concat(newSnapshot)),
         take(100)
       )
       .subscribe((snapshots) => setSnapshot(snapshots));

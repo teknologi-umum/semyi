@@ -1,12 +1,14 @@
 import styles from "./Overview.module.css";
 import EndpointStatusCard from "@/components/EndpointStatusCard";
-import { createResource, For } from "solid-js";
+import { createResource, For, Match, Switch } from "solid-js";
 import DarkModeToggle from "@/components/DarkModeToggle";
 import config from "@config";
 import { fetchAllStaticSnapshots } from "@/utils/fetchStaticSnapshots";
+import { fromEvent, map } from "rxjs";
+import type { Response } from "@/types/Response";
 
 export default function OverviewPage() {
-  const [staticSnapshot] = createResource(async () =>
+  const [staticSnapshot] = createResource(() =>
     fetchAllStaticSnapshots(config.map((c) => c.url))
   );
 
@@ -17,17 +19,37 @@ export default function OverviewPage() {
         <DarkModeToggle />
       </div>
 
-      <div class={styles.overview__endpoints}>
-        <For each={staticSnapshot()}>
-          {(snapshot) => (
-            <EndpointStatusCard
-              name={snapshot[0].name}
-              url={snapshot[0].url}
-              staticSnapshot={snapshot}
-            />
-          )}
-        </For>
-      </div>
+      <Switch fallback={<div>Loading...</div>}>
+        <Match when={!staticSnapshot.loading}>
+          <div class={styles.overview__endpoints}>
+            <For each={staticSnapshot()}>
+              {(snapshot) => {
+                const source = new EventSource(
+                  import.meta.env.VITE_BASE_URL +
+                    "/api/by?url=" +
+                    snapshot[0].url
+                );
+                const snapshotStream$ = fromEvent<MessageEvent<string>>(
+                  source,
+                  "message"
+                ).pipe(map((event) => JSON.parse(event.data) as Response));
+
+                return (
+                  <EndpointStatusCard
+                    name={snapshot[0].name}
+                    url={snapshot[0].url}
+                    staticSnapshot={snapshot}
+                    snapshotStream$={snapshotStream$}
+                  />
+                );
+              }}
+            </For>
+          </div>
+        </Match>
+        <Match when={staticSnapshot.error !== undefined}>
+          <h1>Error while fetching</h1>
+        </Match>
+      </Switch>
     </div>
   );
 }

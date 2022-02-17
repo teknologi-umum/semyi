@@ -1,7 +1,11 @@
 import styles from "./EndpointOverviewCard.module.css";
+import type { Response } from "@/types/Response";
+import { Observable } from "rxjs";
 
 interface EndpointOverviewCard {
   name: string;
+  staticSnapshot: Response[] | undefined;
+  snapshotStream$: Observable<Response>;
 }
 
 export default function EndpointOverviewCard(props: EndpointOverviewCard) {
