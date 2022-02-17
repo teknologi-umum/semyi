@@ -38,7 +38,7 @@ export default function EndpointCard(props: EndpointCardProps) {
         <div class={styles["endpoint-card__header"]}>
           <Link
             class={styles["endpoint-card__title"]}
-            href={"/by?name=" + props.name}
+            href={"/by?name=" + encodeURIComponent(props.name)}
           >
             {props.name}
           </Link>

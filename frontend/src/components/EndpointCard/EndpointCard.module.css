@@ -1,5 +1,7 @@
 .endpoint-card {
-  padding: 1rem;
+  padding: 1.5rem;
+  background-color: var(--color-white);
+  border-radius: 0.25rem;
 }
 
 .endpoint-card__header {
@@ -20,10 +22,6 @@
   font-family: var(--font-body);
   font-size: 1rem;
   color: var(--color-gray);
-}
-
-.endpoint-card:not(:last-child) {
-  border-bottom: 2px solid var(--color-border);
 }
 
 .endpoint-card__content {
