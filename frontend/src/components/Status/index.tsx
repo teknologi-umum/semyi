@@ -57,7 +57,10 @@ export default function Status(props: StatusProps) {
         isVisible={hoveredSnapshotIndex() !== null}
         snapshotIndex={hoveredSnapshotIndex()!}
         snapshot={props.snapshots[hoveredSnapshotIndex()!]}
-        left={(hoveredSnapshotIndex() as number) * (barWidth() + GAP)}
+        left={
+          containerWidth() -
+          (hoveredSnapshotIndex() as number) * (barWidth() + GAP)
+        }
       />
       <div
         class={styles.status}
@@ -76,6 +79,7 @@ export default function Status(props: StatusProps) {
             each={Array(BAR_AMOUNT)
               .fill(0)
               .map((_, i) => i)
+              .slice()
               .reverse()}
           >
             {(i) => (
@@ -85,7 +89,7 @@ export default function Status(props: StatusProps) {
                 class={styles.status__bar}
                 width={barWidth()}
                 height={CONTAINER_HEIGHT}
-                x={i * (barWidth() + GAP)}
+                x={containerWidth() - i * (barWidth() + GAP)}
                 y="0"
                 fill={
                   props.snapshots?.[i]?.statusCode !== undefined &&
