@@ -1,13 +1,8 @@
-.overview__switch_wrapper {
-  margin-left: auto;
-  margin-top: 10px;
-}
-
 .overview__theme_switch {
   display: inline-block;
-  height: 34px;
+  height: 2rem;
   position: relative;
-  width: 60px;
+  width: 4rem;
 }
 
 .overview__theme_switch input {
@@ -15,7 +10,7 @@
 }
 
 .overview__slider {
-  background-color: #ccc;
+  background-color: var(--color-border);
   bottom: 0;
   cursor: pointer;
   left: 0;
@@ -23,56 +18,52 @@
   right: 0;
   top: 0;
   transition: 0.4s;
-  border-radius: 34px;
+  border-radius: 2rem;
 }
 
 .overview__slider:before {
-  background-color: #fff;
-  bottom: 4px;
+  background-color: var(--color-white);
+  bottom: 0.25rem;
   content: "";
-  height: 26px;
-  left: 4px;
+  height: 1.5rem;
+  left: 0.25rem;
   position: absolute;
   transition: 0.4s;
-  width: 26px;
+  width: 1.5rem;
   border-radius: 50%;
 }
 
-input:checked + .overview__slider {
-  background-color: #fec150;
-}
-
 input:checked + .overview__slider:before {
-  transform: translateX(26px);
+  transform: translateX(2rem);
 }
 
 .overview__slider svg {
-  color: #222;
+  color: var(--color-black);
   position: absolute;
   transition: opacity 0.2s ease 0s, transform 0.35s ease 0s;
   pointer-events: none;
 }
 
-.feather__moon {
+.moon-icon {
   opacity: 0;
-  left: 9px;
-  bottom: 9px;
-  transform: translateX(4px);
+  left: 0.5rem;
+  bottom: 0.5rem;
+  transform: translateX(0.25rem);
 }
 
-.feather__sun {
+.sun-icon {
   opacity: 1;
   right: 10px;
   bottom: 9px;
   transform: translateX(0px);
 }
 
-input:checked + .overview__slider .feather__moon {
+input:checked + .overview__slider .moon-icon {
   opacity: 1;
   transform: translateX(0);
 }
 
-input:checked + .overview__slider .feather__sun {
+input:checked + .overview__slider .sun-icon {
   opacity: 0;
   transform: translateX(-4px);
 }

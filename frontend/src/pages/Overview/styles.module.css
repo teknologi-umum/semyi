@@ -1,0 +1,25 @@
+.overview {
+  margin: 0 auto;
+  padding: 0 1rem;
+  max-width: 960px;
+}
+
+.overview__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.overview__title {
+  font-size: 2.5rem;
+  font-family: var(--font-heading);
+  font-weight: 700;
+  margin: 2rem 0;
+  color: var(--color-black);
+}
+
+.overview__endpoints {
+  display: flex;
+  gap: 1rem;
+  flex-direction: column;
+}

@@ -1,12 +1,12 @@
 import { Route, Routes } from "solid-app-router";
 import OverviewPage from "@/pages/Overview";
-import StatusPage from "@/pages/Status";
+import DetailPage from "@/pages/Detail";
 
 export default function App() {
   return (
     <Routes>
       <Route path="/" component={OverviewPage} />
-      <Route path="/status" component={StatusPage} />
+      <Route path="/by" component={DetailPage} />
     </Routes>
   );
 }

@@ -280,12 +280,12 @@ func (d *Deps) staticSnapshot(w http.ResponseWriter, r *http.Request) {
 			status_code,
 			request_duration,
 			created_at
-		FROM 
-			snapshot 
-		WHERE 
+		FROM
+			snapshot
+		WHERE
 			url = ?
-		ORDER BY 
-			created_at DESC 
+		ORDER BY
+			created_at DESC
 		LIMIT 100`,
 		url,
 	)
@@ -331,6 +331,7 @@ func (d *Deps) staticSnapshot(w http.ResponseWriter, r *http.Request) {
 		snapshot.Description = endpoint.Description
 		snapshot.Method = endpoint.Method
 		snapshot.Headers = endpoint.Headers
+		snapshot.Success = snapshot.StatusCode == http.StatusOK
 
 		snapshots = append(snapshots, snapshot)
 	}

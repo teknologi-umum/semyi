@@ -1,14 +1,18 @@
-import type { Snapshot } from "@/types/Snapshot";
 import { createMemo, createSignal, For, onMount } from "solid-js";
-import styles from "./Status.module.css";
+import Tooltip from "@/components/StatusTooltip";
+import type { Response } from "@/types";
+import styles from "./styles.module.css";
 
 interface StatusProps {
-  snapshots: Snapshot[];
+  snapshots: Response[];
 }
 
 export default function Status(props: StatusProps) {
   let container: HTMLDivElement | undefined;
   const [containerWidth, setContainerWidth] = createSignal(0);
+  const [hoveredSnapshotIndex, setHoveredSnapshotIndex] = createSignal<
+    number | null
+  >(null);
 
   const CONTAINER_HEIGHT = 30;
   const BAR_AMOUNT = 100;
@@ -30,43 +34,74 @@ export default function Status(props: StatusProps) {
     }
   });
 
+  function showTooltip(e: MouseEvent) {
+    const target = e.target as Element;
+    if (target.tagName !== "rect") return;
+
+    const idx = target.getAttribute("data-index");
+    if (idx === null) return;
+
+    setHoveredSnapshotIndex(parseInt(idx));
+  }
+
+  function hideTooltip() {
+    setHoveredSnapshotIndex(null);
+  }
+
   return (
-    <div class={styles.status} ref={container}>
-      <svg
-        width={containerWidth()}
-        height={30}
-        xmlns="http://www.w3.org/2000/svg"
-        version="1.1"
-        viewBox={`0 0 ${containerWidth()} ${CONTAINER_HEIGHT}`}
+    <>
+      <Tooltip
+        isVisible={hoveredSnapshotIndex() !== null}
+        snapshotIndex={hoveredSnapshotIndex()!}
+        snapshot={props.snapshots[hoveredSnapshotIndex()!]}
+        left={
+          containerWidth() -
+          (hoveredSnapshotIndex() as number) * (barWidth() + GAP)
+        }
+      />
+      <div
+        class={styles.status}
+        ref={container}
+        onMouseOver={showTooltip}
+        onMouseLeave={hideTooltip}
       >
-        <For
-          each={Array(BAR_AMOUNT)
-            .fill(0)
-            .map((_, i) => i)
-            .reverse()}
+        <svg
+          width={containerWidth()}
+          height={30}
+          xmlns="http://www.w3.org/2000/svg"
+          version="1.1"
+          viewBox={`0 0 ${containerWidth()} ${CONTAINER_HEIGHT}`}
         >
-          {(i) =>
-            <rect
-              class="status__bar"
-              width={barWidth()}
-              height={CONTAINER_HEIGHT}
-              x={i * (barWidth() + GAP)}
-              y="0"
-              fill={
-                props.snapshots?.[i]?.statusCode !== undefined &&
-                props.snapshots?.[i]?.statusCode !== null
-                  ? props.snapshots[i].statusCode === 200
-                    ? "var(--color-emerald)"
-                    : "var(--color-red)"
-                  : "var(--color-light-gray)"
-              }
-              fill-opacity="1"
-              rx={barRadius()}
-              ry={barRadius()}
-            />
-          }
-        </For>
-      </svg>
-    </div>
+          <For
+            each={Array(BAR_AMOUNT)
+              .fill(0)
+              .map((_, i) => i)
+              .slice()
+              .reverse()}
+          >
+            {(i) => (
+              <rect
+                data-index={i}
+                class={styles.status__bar}
+                width={barWidth()}
+                height={CONTAINER_HEIGHT}
+                x={containerWidth() - i * (barWidth() + GAP)}
+                y="0"
+                fill={
+                  props.snapshots?.[i]?.statusCode !== undefined
+                    ? props.snapshots[i].success
+                      ? "var(--color-emerald)"
+                      : "var(--color-red)"
+                    : "var(--color-lighter-gray)"
+                }
+                fill-opacity="1"
+                rx={barRadius()}
+                ry={barRadius()}
+              />
+            )}
+          </For>
+        </svg>
+      </div>
+    </>
   );
 }

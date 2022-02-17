@@ -129,7 +129,7 @@ func main() {
 					log.Printf("[Running worker] Recovered from panic: %v", r)
 				}
 			}()
-			
+
 			worker.Run()
 		}()
 
