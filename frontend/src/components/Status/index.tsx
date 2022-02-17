@@ -88,9 +88,8 @@ export default function Status(props: StatusProps) {
                 x={containerWidth() - i * (barWidth() + GAP)}
                 y="0"
                 fill={
-                  props.snapshots?.[i]?.statusCode !== undefined &&
-                  props.snapshots?.[i]?.statusCode !== null
-                    ? props.snapshots[i].statusCode === 200
+                  props.snapshots?.[i]?.statusCode !== undefined
+                    ? props.snapshots[i].success
                       ? "var(--color-emerald)"
                       : "var(--color-red)"
                     : "var(--color-lighter-gray)"

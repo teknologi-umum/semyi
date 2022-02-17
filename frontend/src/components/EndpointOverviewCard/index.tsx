@@ -14,7 +14,7 @@ export default function EndpointOverviewCard(props: EndpointOverviewCard) {
     props.staticSnapshot || []
   );
   const uptimeRate = createMemo(() => {
-    const uptime = snapshot().filter((r) => r.statusCode === 200).length;
+    const uptime = snapshot().filter((r) => r.success).length;
     const total = snapshot().length;
     return (uptime / total) * 100;
   });
