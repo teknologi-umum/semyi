@@ -2,6 +2,7 @@
   padding: 1.5rem;
   background-color: var(--color-white);
   border-radius: 0.25rem;
+  position: relative;
 }
 
 .endpoint-card__header {

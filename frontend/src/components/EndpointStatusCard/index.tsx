@@ -34,20 +34,18 @@ export default function EndpointStatusCard(props: EndpointStatusCardProps) {
 
   return (
     <div class={styles["endpoint-card"]}>
-      <div class={styles["endpoint-card__content"]}>
-        <div class={styles["endpoint-card__header"]}>
-          <Link
-            class={styles["endpoint-card__title"]}
-            href={"/by?name=" + encodeURIComponent(props.name)}
-          >
-            {props.name}
-          </Link>
-          <a class={styles["endpoint-card__url"]} href={props.url}>
-            {props.url}
-          </a>
-        </div>
-        <Status snapshots={snapshot()}></Status>
+      <div class={styles["endpoint-card__header"]}>
+        <Link
+          class={styles["endpoint-card__title"]}
+          href={"/by?name=" + encodeURIComponent(props.name)}
+        >
+          {props.name}
+        </Link>
+        <a class={styles["endpoint-card__url"]} href={props.url}>
+          {props.url}
+        </a>
       </div>
+      <Status snapshots={snapshot()}></Status>
     </div>
   );
 }

@@ -1,9 +1,10 @@
 import { Link, Navigate, useSearchParams } from "solid-app-router";
-import { createMemo, createSignal } from "solid-js";
-import EndpointCard from "@/components/EndpointCard";
+import EndpointStatusCard from "@/components/EndpointStatusCard";
+import DarkModeToggle from "@/components/DarkModeToggle";
+import EndpointOverviewCard from "@/components/EndpointOverviewCard";
 import styles from "./Detail.module.css";
-import type { Endpoint } from "@/types/Endpoint";
 import config from "@config";
+import type { Endpoint } from "@/types/Endpoint";
 
 export default function DetailPage() {
   const [searchParams] = useSearchParams();
@@ -12,7 +13,9 @@ export default function DetailPage() {
     return <Navigate href="/" />;
   }
 
-  const endpoint = config.find(({ name }) => name === searchParams.name);
+  const endpoint: Endpoint | undefined = config.find(
+    ({ name }) => name === decodeURIComponent(searchParams.name)
+  );
 
   if (endpoint === undefined) {
     return <Navigate href="/" />;
@@ -21,13 +24,17 @@ export default function DetailPage() {
   return (
     <div class={styles.detail}>
       <div class={styles.detail__header}>
-        <h1 class={styles.detail__title}>Status for {searchParams.name}</h1>
-        <Link href="/" class={styles.detail__back}>
-          Back to Home
-        </Link>
+        <div class={styles["detail__header-left"]}>
+          <h1 class={styles.detail__title}>Status for {searchParams.name}</h1>
+          <Link href="/" class={styles.detail__back}>
+            Back to Home
+          </Link>
+        </div>
+        <DarkModeToggle />
       </div>
       <div class={styles.detail__body}>
-        <EndpointCard name={endpoint.name} url={endpoint.url} />
+        <EndpointStatusCard name={endpoint.name} url={endpoint.url} />
+        <EndpointOverviewCard name={endpoint.name} />
       </div>
     </div>
   );

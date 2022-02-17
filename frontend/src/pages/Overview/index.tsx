@@ -1,5 +1,5 @@
 import styles from "./Overview.module.css";
-import EndpointCard from "@/components/EndpointCard";
+import EndpointStatusCard from "@/components/EndpointStatusCard";
 import { For } from "solid-js";
 import DarkModeToggle from "@/components/DarkModeToggle";
 import config from "@config";
@@ -14,7 +14,7 @@ export default function OverviewPage() {
 
       <div class={styles.overview__endpoints}>
         <For each={config}>
-          {({ name, url }) => <EndpointCard name={name} url={url} />}
+          {({ name, url }) => <EndpointStatusCard name={name} url={url} />}
         </For>
       </div>
     </div>
