@@ -1,0 +1,31 @@
+.endpoint-card {
+  padding: 1rem;
+}
+
+.endpoint-card__header {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.endpoint-card__title {
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
+  font-weight: 500;
+  color: var(--color-black);
+  text-decoration: none;
+}
+
+.endpoint-card__url {
+  font-family: var(--font-body);
+  font-size: 1rem;
+  color: var(--color-gray);
+}
+
+.endpoint-card:not(:last-child) {
+  border-bottom: 2px solid var(--color-border);
+}
+
+.endpoint-card__content {
+  position: relative;
+}

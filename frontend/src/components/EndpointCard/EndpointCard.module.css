@@ -1,14 +1,14 @@
-.website-card {
+.endpoint-card {
   padding: 1rem;
 }
 
-.website-card__header {
+.endpoint-card__header {
   display: flex;
   gap: 0.5rem;
   align-items: center;
 }
 
-.website-card__title {
+.endpoint-card__title {
   font-family: var(--font-heading);
   font-size: 1.25rem;
   font-weight: 500;
@@ -16,16 +16,16 @@
   text-decoration: none;
 }
 
-.website-card__url {
+.endpoint-card__url {
   font-family: var(--font-body);
   font-size: 1rem;
   color: var(--color-gray);
 }
 
-.website-card:not(:last-child) {
+.endpoint-card:not(:last-child) {
   border-bottom: 2px solid var(--color-border);
 }
 
-.website-card__content {
+.endpoint-card__content {
   position: relative;
 }

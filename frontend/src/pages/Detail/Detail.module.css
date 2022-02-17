@@ -1,0 +1,21 @@
+.detail {
+  margin: 0 auto;
+  padding: 0 1rem;
+  max-width: 960px;
+}
+
+.detail__header {
+  width: 100%;
+  padding: 2rem 0;
+}
+
+.detail__title {
+  font-family: var(--font-heading);
+  font-size: 2.5rem;
+  font-weight: 800;
+}
+
+.detail__back {
+  font-family: var(--font-body);
+  color: var(--color-gray);
+}

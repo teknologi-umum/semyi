@@ -1,16 +1,16 @@
 import type { Snapshot } from "@/types/Snapshot";
 import Status from "@/components/Status";
-import styles from "./WebsiteCard.module.css";
+import styles from "./EndpointCard.module.css";
 import { createSignal, onMount } from "solid-js";
 import { fromEvent, map, take } from "rxjs";
 import { Link } from "solid-app-router";
 
-interface WebsiteCardProps {
+interface EndpointCardProps {
   name: string;
   url: string;
 }
 
-export default function WebsiteCard(props: WebsiteCardProps) {
+export default function EndpointCard(props: EndpointCardProps) {
   const [snapshot, setSnapshot] = createSignal<Snapshot[]>([]);
 
   onMount(async () => {
@@ -33,16 +33,16 @@ export default function WebsiteCard(props: WebsiteCardProps) {
   });
 
   return (
-    <div class={styles["website-card"]}>
-      <div class={styles["website-card__content"]}>
-        <div class={styles["website-card__header"]}>
+    <div class={styles["endpoint-card"]}>
+      <div class={styles["endpoint-card__content"]}>
+        <div class={styles["endpoint-card__header"]}>
           <Link
-            class={styles["website-card__title"]}
+            class={styles["endpoint-card__title"]}
             href={"/by?name=" + props.name}
           >
             {props.name}
           </Link>
-          <a class={styles["website-card__url"]} href={props.url}>
+          <a class={styles["endpoint-card__url"]} href={props.url}>
             {props.url}
           </a>
         </div>

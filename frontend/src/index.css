@@ -8,6 +8,9 @@
 }
 
 :root {
+  --font-heading: "IBM Plex Sans", sans-serif;
+  --font-body: "Libre Franklin", sans-serif;
+
   --color-white: #ffffff;
   --color-bg: #f9fafc;
   --color-dark-bg: #e5e7eb;
@@ -16,6 +19,7 @@
   --color-gray: #475569;
   --color-emerald: #10b981;
   --color-red: #ef4444;
+  --color-sky: #0284c7;
   --color-border: #e5e7eb;
 }
 
@@ -28,6 +32,7 @@
   --color-gray: #94a3b8;
   --color-emerald: #34d399;
   --color-red: #f87171;
+  --color-sky: #0ea5e9;
   --color-border: #374151;
 }
 

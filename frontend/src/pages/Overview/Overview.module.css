@@ -12,13 +12,13 @@
 
 .overview__title {
   font-size: 2.5rem;
-  font-family: "IBM Plex sans", sans-serif;
+  font-family: var(--font-heading);
   font-weight: 800;
   margin: 2rem 0;
   color: var(--color-black);
 }
 
-.overview__websites {
+.overview__endpoints {
   border-radius: 0.25rem;
   border: 2px solid var(--color-border);
   display: flex;

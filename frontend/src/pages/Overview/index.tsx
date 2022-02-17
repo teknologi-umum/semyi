@@ -1,5 +1,5 @@
 import styles from "./Overview.module.css";
-import WebsiteCard from "@/components/WebsiteCard";
+import EndpointCard from "@/components/EndpointCard";
 import { For } from "solid-js";
 import DarkModeToggle from "@/components/DarkModeToggle";
 import config from "@config";
@@ -12,9 +12,9 @@ export default function OverviewPage() {
         <DarkModeToggle />
       </div>
 
-      <div class={styles.overview__websites}>
+      <div class={styles.overview__endpoints}>
         <For each={config}>
-          {({ name, url }) => <WebsiteCard name={name} url={url} />}
+          {({ name, url }) => <EndpointCard name={name} url={url} />}
         </For>
       </div>
     </div>
