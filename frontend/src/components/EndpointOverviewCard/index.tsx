@@ -16,7 +16,7 @@ export default function EndpointOverviewCard(props: EndpointOverviewCard) {
   const uptimeRate = createMemo(() => {
     const uptime = snapshot().filter((r) => r.success).length;
     const total = snapshot().length;
-    return (uptime / total) * 100;
+    return uptime / total * 100;
   });
   const avgRespTime = createMemo(() => {
     const total = snapshot().reduce((acc, r) => acc + r.requestDuration, 0);
@@ -24,14 +24,14 @@ export default function EndpointOverviewCard(props: EndpointOverviewCard) {
   });
   const maxRespTime = createMemo(() => {
     const max = snapshot().reduce(
-      (acc, r) => (r.requestDuration > acc ? r.requestDuration : acc),
+      (acc, r) => r.requestDuration > acc ? r.requestDuration : acc,
       0
     );
     return max;
   });
   const minRespTime = createMemo(() => {
     const min = snapshot().reduce(
-      (acc, r) => (r.requestDuration < acc ? r.requestDuration : acc),
+      (acc, r) => r.requestDuration < acc ? r.requestDuration : acc,
       Infinity
     );
     return min;

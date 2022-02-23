@@ -14,12 +14,12 @@ export default function DarkModeToggle() {
     window.matchMedia("(prefers-color-scheme: dark)").matches;
 
   const defaultDark =
-    storedTheme === "dark" || (storedTheme === null && prefersDark);
+    storedTheme === "dark" || storedTheme === null && prefersDark;
 
   if (defaultDark) setTheme("dark");
 
   const toggleDarkMode = (e: Event) => {
-    setTheme((e.target as HTMLInputElement).checked ? "dark" : "light");
+    setTheme(e.target as HTMLInputElement.checked ? "dark" : "light");
   };
 
   return (
@@ -32,8 +32,8 @@ export default function DarkModeToggle() {
           checked={defaultDark}
         />
         <div class={styles.overview__slider}>
-          <SunIcon className={styles["sun-icon"]} />
-          <MoonIcon className={styles["moon-icon"]} />
+          <SunIcon class={styles["sun-icon"]} />
+          <MoonIcon class={styles["moon-icon"]} />
         </div>
       </label>
     </div>
