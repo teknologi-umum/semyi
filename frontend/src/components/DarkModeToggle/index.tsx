@@ -1,5 +1,6 @@
 import { MoonIcon, SunIcon } from "@/icons";
 import styles from "./styles.module.css";
+import "./icons.css";
 
 export default function DarkModeToggle() {
   const setTheme = (theme: "dark" | "light") => {
@@ -19,7 +20,8 @@ export default function DarkModeToggle() {
   if (defaultDark) setTheme("dark");
 
   const toggleDarkMode = (e: Event) => {
-    setTheme(e.target as HTMLInputElement.checked ? "dark" : "light");
+    const target = e.target as HTMLInputElement;
+    setTheme(target.checked ? "dark" : "light");
   };
 
   return (
@@ -31,9 +33,9 @@ export default function DarkModeToggle() {
           onChange={toggleDarkMode}
           checked={defaultDark}
         />
-        <div class={styles.overview__slider}>
-          <SunIcon class={styles["sun-icon"]} />
-          <MoonIcon class={styles["moon-icon"]} />
+        <div class="overview__slider">
+          <SunIcon class="sun-icon" />
+          <MoonIcon class="moon-icon" />
         </div>
       </label>
     </div>

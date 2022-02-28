@@ -3,13 +3,13 @@ import type { Response } from "@/types";
 import styles from "./styles.module.css";
 import { createMemo, createSignal, onMount } from "solid-js";
 
-interface EndpointOverviewCard {
+interface EndpointOverviewCardProps {
   name: string;
   staticSnapshot: Response[] | undefined;
   snapshotStream$: Observable<Response>;
 }
 
-export default function EndpointOverviewCard(props: EndpointOverviewCard) {
+export default function EndpointOverviewCard(props: EndpointOverviewCardProps) {
   const [snapshot, setSnapshot] = createSignal<Response[]>(
     props.staticSnapshot || []
   );

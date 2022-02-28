@@ -17,7 +17,7 @@ export default function EndpointStatusCard(props: EndpointStatusCardProps) {
     props.staticSnapshot || []
   );
 
-  onMount(async () => {
+  onMount(() => {
     props.snapshotStream$
       .pipe(
         map((newSnapshot) => snapshot().concat(newSnapshot)),
