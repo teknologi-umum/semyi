@@ -14,12 +14,16 @@ interface EndpointStatusCardProps {
 
 export default function EndpointStatusCard(props: EndpointStatusCardProps) {
   const [snapshot, setSnapshot] = createSignal<Response[]>(
+    // this doesn't need to be reactive
+    // eslint-disable-next-line solid/reactivity
     props.staticSnapshot || []
   );
 
   onMount(() => {
     props.snapshotStream$
       .pipe(
+        // this doesn't need to be reactive
+        // eslint-disable-next-line solid/reactivity
         map((newSnapshot) => snapshot().concat(newSnapshot)),
         take(100)
       )

@@ -11,12 +11,14 @@ interface EndpointOverviewCardProps {
 
 export default function EndpointOverviewCard(props: EndpointOverviewCardProps) {
   const [snapshot, setSnapshot] = createSignal<Response[]>(
+    // this doesn't need to be reactive
+    // eslint-disable-next-line solid/reactivity
     props.staticSnapshot || []
   );
   const uptimeRate = createMemo(() => {
     const uptime = snapshot().filter((r) => r.success).length;
     const total = snapshot().length;
-    return uptime / total * 100;
+    return (uptime / total) * 100;
   });
   const avgRespTime = createMemo(() => {
     const total = snapshot().reduce((acc, r) => acc + r.requestDuration, 0);
@@ -24,14 +26,14 @@ export default function EndpointOverviewCard(props: EndpointOverviewCardProps) {
   });
   const maxRespTime = createMemo(() => {
     const max = snapshot().reduce(
-      (acc, r) => r.requestDuration > acc ? r.requestDuration : acc,
+      (acc, r) => (r.requestDuration > acc ? r.requestDuration : acc),
       0
     );
     return max;
   });
   const minRespTime = createMemo(() => {
     const min = snapshot().reduce(
-      (acc, r) => r.requestDuration < acc ? r.requestDuration : acc,
+      (acc, r) => (r.requestDuration < acc ? r.requestDuration : acc),
       Infinity
     );
     return min;
@@ -40,6 +42,8 @@ export default function EndpointOverviewCard(props: EndpointOverviewCardProps) {
   onMount(() => {
     props.snapshotStream$
       .pipe(
+        // this doesn't need to be reactive
+        // eslint-disable-next-line solid/reactivity
         map((newSnapshot) => snapshot().concat(newSnapshot)),
         take(100)
       )

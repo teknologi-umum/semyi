@@ -12,6 +12,7 @@ export async function fetchAllStaticSnapshots(urls: string[]) {
 
     return response;
   } catch (err) {
+    // eslint-disable-next-line no-console
     console.error(err);
     throw err;
   }
@@ -25,6 +26,7 @@ export async function fetchSingleStaticSnapshot(url: string) {
 
     return response;
   } catch (err) {
+    // eslint-disable-next-line no-console
     console.error(err);
     throw err;
   }
