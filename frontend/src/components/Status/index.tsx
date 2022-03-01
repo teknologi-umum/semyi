@@ -52,11 +52,11 @@ export default function Status(props: StatusProps) {
     <>
       <Tooltip
         isVisible={hoveredSnapshotIndex() !== null}
-        snapshotIndex={hoveredSnapshotIndex()!}
+        snapshotIndex={hoveredSnapshotIndex()}
         snapshot={props.snapshots[hoveredSnapshotIndex()!]}
         left={
           containerWidth() -
-          hoveredSnapshotIndex() as number * (barWidth() + GAP)
+          hoveredSnapshotIndex() * (barWidth() + GAP)
         }
       />
       <div

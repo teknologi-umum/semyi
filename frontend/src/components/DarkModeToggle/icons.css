@@ -1,0 +1,57 @@
+.overview__slider {
+  background-color: var(--color-border);
+  bottom: 0;
+  cursor: pointer;
+  left: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
+  transition: 0.4s;
+  border-radius: 2rem;
+}
+
+.overview__slider:before {
+  background-color: var(--color-white);
+  bottom: 0.25rem;
+  content: "";
+  height: 1.5rem;
+  left: 0.25rem;
+  position: absolute;
+  transition: 0.4s;
+  width: 1.5rem;
+  border-radius: 50%;
+}
+
+input:checked + .overview__slider:before {
+  transform: translateX(2rem);
+}
+
+.overview__slider svg {
+  color: var(--color-black);
+  position: absolute;
+  transition: opacity 0.2s ease 0s, transform 0.35s ease 0s;
+  pointer-events: none;
+}
+.moon-icon {
+  opacity: 0;
+  left: 0.5rem;
+  bottom: 0.5rem;
+  transform: translateX(0.25rem);
+}
+
+.sun-icon {
+  opacity: 1;
+  right: 10px;
+  bottom: 9px;
+  transform: translateX(0px);
+}
+
+input:checked + .overview__slider .moon-icon {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+input:checked + .overview__slider .sun-icon {
+  opacity: 0;
+  transform: translateX(-4px);
+}

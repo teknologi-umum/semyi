@@ -1,4 +1,4 @@
-export function SunIcon(props: { className: string }) {
+export function SunIcon(props: { class: string }) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -10,7 +10,7 @@ export function SunIcon(props: { className: string }) {
       stroke-width="2"
       stroke-linecap="round"
       stroke-linejoin="round"
-      class={props.className}
+      class={props.class}
     >
       <circle cx="12" cy="12" r="5"></circle>
       <line x1="12" y1="1" x2="12" y2="3"></line>
