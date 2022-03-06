@@ -14,7 +14,7 @@ export default function OverviewPage() {
   );
 
   onMount(() => {
-    document.title = "Overview | Semya";
+    document.title = "Overview | Semyi";
   });
 
   return (

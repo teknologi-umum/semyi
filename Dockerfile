@@ -3,7 +3,7 @@ WORKDIR /app
 COPY frontend/ .
 RUN npm install && npm run build
 
-FROM golang:1.17.6-bullseye AS backend
+FROM golang:1.17.8-bullseye AS backend
 WORKDIR /app
 COPY backend/ .
 RUN go build .
@@ -12,9 +12,9 @@ FROM debian:bullseye
 RUN apt-get update && apt-get upgrade -y && apt-get install -y sqlite3
 WORKDIR /app
 COPY config.json .
-COPY --from=backend /app/semya .
+COPY --from=backend /app/semyi .
 COPY --from=frontend /app/dist .
 ENV STATIC_PATH=/app/dist
 ENV ENV=production
 EXPOSE ${PORT}
-CMD ["/app/semya"]
+CMD ["/app/semyi"]
