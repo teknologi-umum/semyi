@@ -109,7 +109,7 @@ func main() {
 	}
 
 	// Create a new worker
-	for _, endpoint := range config {
+	for _, endpoint := range config.Endpoints {
 		worker, err := deps.NewWorker(endpoint)
 		if err != nil {
 			log.Fatalf("Failed to create worker: %v", err)

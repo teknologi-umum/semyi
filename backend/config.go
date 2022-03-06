@@ -8,6 +8,11 @@ import (
 	"os"
 )
 
+type ConfigurationFile struct {
+	Endpoints []Endpoint `json:"endpoints"`
+	Webhook   Webhook    `json:"webhook"`
+}
+
 type Endpoint struct {
 	Name        string            `json:"name"`
 	URL         string            `json:"url"`
@@ -18,32 +23,38 @@ type Endpoint struct {
 	Method      string            `json:"method"`
 }
 
-func ReadConfigurationFile(path string) ([]Endpoint, error) {
+type Webhook struct {
+	URL             string `json:"url"`
+	SuccessResponse bool   `json:"success_response"`
+	FailedResponse  bool   `json:"failed_response"`
+}
+
+func ReadConfigurationFile(path string) (ConfigurationFile, error) {
 	if path == "" {
 		path = "../config.json"
 	}
 
 	file, err := os.Open(path)
 	if err != nil {
-		return nil, fmt.Errorf("failed to open configuration file: %v", err)
+		return ConfigurationFile{}, fmt.Errorf("failed to open configuration file: %v", err)
 	}
 	defer file.Close()
 
 	data, err := io.ReadAll(file)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read configuration file: %v", err)
+		return ConfigurationFile{}, fmt.Errorf("failed to read configuration file: %v", err)
 	}
 
-	var endpoints []Endpoint
-	err = json.Unmarshal(data, &endpoints)
+	var configurationFile ConfigurationFile
+	err = json.Unmarshal(data, &configurationFile)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse configuration file: %v", err)
+		return ConfigurationFile{}, fmt.Errorf("failed to parse configuration file: %v", err)
 	}
 
-	return endpoints, nil
+	return configurationFile, nil
 }
 
-func ValidateConfiguration(config Endpoint) (bool, error) {
+func ValidateEndpoint(config Endpoint) (bool, error) {
 	if config.Name == "" {
 		return false, fmt.Errorf("name is required")
 	}
@@ -68,6 +79,22 @@ func ValidateConfiguration(config Endpoint) (bool, error) {
 
 	if config.Interval < 0 {
 		return false, fmt.Errorf("interval must be greater than 0")
+	}
+
+	return true, nil
+}
+
+func ValidateWebhook(webhook Webhook) (bool, error) {
+	if webhook.URL != "" {
+		// Try to parse the given URL
+		_, err := url.Parse(webhook.URL)
+		if err != nil {
+			return false, fmt.Errorf("invalid url: %v", err)
+		}
+	}
+
+	if !webhook.FailedResponse && !webhook.SuccessResponse {
+		return false, fmt.Errorf("failed_response and success_response cannot both be false")
 	}
 
 	return true, nil
