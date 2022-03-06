@@ -1,4 +1,5 @@
-[
+{
+  "endpoints": [
     {
         "name": "Digital Ocean",
         "url": "https://status.digitalocean.com/",
@@ -12,4 +13,10 @@
         "description": "Github API",
         "method": "GET"
     }
-]
+  ],
+  "webhook": {
+    "url": "http://your-endpoint/",
+    "success_response": true,
+    "failed_response": true
+  }
+}

@@ -31,7 +31,7 @@ type Worker struct {
 func (d *Deps) NewWorker(e Endpoint) (*Worker, error) {
 	// Validate the endpoint
 	var endpoint = &e
-	_, err := ValidateConfiguration(*endpoint)
+	_, err := ValidateEndpoint(*endpoint)
 	if err != nil {
 		return &Worker{}, err
 	}
