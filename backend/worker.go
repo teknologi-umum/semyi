@@ -26,6 +26,7 @@ type Worker struct {
 	db       *sql.DB
 	queue    *Queue
 	cache    *bigcache.BigCache
+	webhook  *Webhook
 }
 
 func (d *Deps) NewWorker(e Endpoint) (*Worker, error) {
@@ -53,6 +54,7 @@ func (d *Deps) NewWorker(e Endpoint) (*Worker, error) {
 		db:       d.DB,
 		queue:    d.Queue,
 		cache:    d.Cache,
+		webhook:  d.Webhook,
 	}, nil
 }
 
@@ -73,6 +75,13 @@ func (w *Worker) Run() {
 		if err != nil {
 			cancel()
 			log.Printf("Failed to insert response to the database: %v", err)
+			continue
+		}
+
+		err = w.webhook.Send(ctx, *response)
+		if err != nil {
+			cancel()
+			log.Printf("Failed to send webhook: %v", err)
 			continue
 		}
 

@@ -23,6 +23,7 @@ type Deps struct {
 	Cache           *bigcache.BigCache
 	DefaultTimeout  int
 	DefaultInterval int
+	Webhook         *Webhook
 }
 
 func main() {
@@ -106,6 +107,7 @@ func main() {
 		Queue:           NewQueue(),
 		DefaultTimeout:  defTimeout,
 		DefaultInterval: defInterval,
+		Webhook:         &config.Webhook,
 	}
 
 	// Create a new worker
