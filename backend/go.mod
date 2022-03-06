@@ -1,4 +1,4 @@
-module semya
+module semyi
 
 go 1.17
 

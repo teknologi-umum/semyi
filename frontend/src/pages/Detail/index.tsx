@@ -37,7 +37,7 @@ export default function DetailPage() {
   ).pipe(map((event) => JSON.parse(event.data) as Response));
 
   onMount(() => {
-    document.title = `Status for ${endpoint.name} | Semya`;
+    document.title = `Status for ${endpoint.name} | Semyi`;
   });
 
   return (

@@ -1,11 +1,11 @@
-# Semya
+# Semyi
 
 An uptime monitoring platform to monitor your server and services. Best used as a Docker
 container, by running:
 
 ```
-docker build -t semya:latest .
-docker run -d -p 5000:5000 -v ./config.json:/app/config.json semya:latest
+docker build -t semyi:latest .
+docker run -d -p 5000:5000 -v ./config.json:/app/config.json semyi:latest
 docker image prune
 ```
 
@@ -22,7 +22,7 @@ uptime-monitor:
     environment:
         DEFAULT_INTERVAL: 30
         DEFAULT_TIMEOUT: 10
-        PORT: 5000    
+        PORT: 5000
 ```
 
 There is another convinient way, by us creating a Github Docker package that you can directly pull (via ghcr.io), but that will be coming soon.
@@ -30,7 +30,7 @@ There is another convinient way, by us creating a Github Docker package that you
 ## License
 
 ```
-Semya
+Semyi
 Copyright (C) 2022 Teknologi Umum <opensource@teknologiumum.com>
 
 This program is free software: you can redistribute it and/or modify
