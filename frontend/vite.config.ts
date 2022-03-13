@@ -11,7 +11,7 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": resolve("src"),
-      "@config": resolve("..", "config.json")
+      "@config": import.meta.env.CONFIG_PATH
     }
   }
 });

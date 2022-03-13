@@ -10,7 +10,7 @@ import styles from "./styles.module.css";
 
 export default function OverviewPage() {
   const [staticSnapshot] = createResource(() =>
-    fetchAllStaticSnapshots(config.map((c) => c.url))
+    fetchAllStaticSnapshots(config.endpoints.map((c) => c.url))
   );
 
   onMount(() => {
