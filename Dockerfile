@@ -1,4 +1,4 @@
-FROM node:16.3.2-bullseye AS frontend
+FROM node:16.14.0-bullseye AS frontend
 WORKDIR /app
 COPY frontend/ .
 RUN npm install && npm run build
