@@ -12,9 +12,10 @@ FROM debian:bullseye
 RUN apt-get update && apt-get upgrade -y && apt-get install -y sqlite3
 WORKDIR /app
 COPY config.json .
-COPY --from=backend /app/semyi .
-COPY --from=frontend /app/dist .
-ENV STATIC_PATH=/app/dist
+COPY db.sqlite3 .
+COPY --from=backend /app/semyi /app/src/semyi
+COPY --from=frontend /app/dist /app/src/dist
+ENV STATIC_PATH=/app/src/dist
 ENV ENV=production
 EXPOSE ${PORT}
 CMD ["/app/semyi"]
