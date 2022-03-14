@@ -1,11 +1,13 @@
 FROM node:16.14.0-bullseye AS frontend
 WORKDIR /app
 COPY frontend/ .
+COPY config.json /config.json
 RUN npm install && npm run build
 
 FROM golang:1.17.8-bullseye AS backend
 WORKDIR /app
 COPY backend/ .
+COPY config.json /config.json
 RUN go build .
 
 FROM debian:bullseye
