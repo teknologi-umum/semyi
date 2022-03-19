@@ -15,7 +15,7 @@ export default function DarkModeToggle() {
     window.matchMedia("(prefers-color-scheme: dark)").matches;
 
   const defaultDark =
-    storedTheme === "dark" || storedTheme === null && prefersDark;
+    storedTheme === "dark" || (storedTheme === null && prefersDark);
 
   if (defaultDark) setTheme("dark");
 

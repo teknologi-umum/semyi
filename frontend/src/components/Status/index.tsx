@@ -54,10 +54,7 @@ export default function Status(props: StatusProps) {
         isVisible={hoveredSnapshotIndex() !== null}
         snapshotIndex={hoveredSnapshotIndex()}
         snapshot={props.snapshots[hoveredSnapshotIndex()!]}
-        left={
-          containerWidth() -
-          hoveredSnapshotIndex() * (barWidth() + GAP)
-        }
+        left={containerWidth() - hoveredSnapshotIndex() * (barWidth() + GAP)}
       />
       <div
         class={styles.status}

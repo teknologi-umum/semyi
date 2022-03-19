@@ -17,5 +17,5 @@ export default ({ mode }: { mode: string }) => {
         "@config": env.VITE_CONFIG_PATH || resolve("..", "config.json")
       }
     }
-  })
+  });
 };

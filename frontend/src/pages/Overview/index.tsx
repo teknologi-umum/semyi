@@ -30,9 +30,7 @@ export default function OverviewPage() {
             <For each={staticSnapshot()}>
               {(snapshot) => {
                 const source = new EventSource(
-                  import.meta.env.VITE_BASE_URL +
-                    "/api/by?url=" +
-                    snapshot[0].url
+                  "/api/by?url=" + snapshot[0].url
                 );
                 const snapshotStream$ = fromEvent<MessageEvent<string>>(
                   source,

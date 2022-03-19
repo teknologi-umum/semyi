@@ -28,9 +28,7 @@ export default function DetailPage() {
     fetchSingleStaticSnapshot(endpoint.url)
   );
 
-  const source = new EventSource(
-    import.meta.env.VITE_BASE_URL + "/api/by?url=" + endpoint.url
-  );
+  const source = new EventSource("/api/by?url=" + endpoint.url);
   const snapshotStream$ = fromEvent<MessageEvent<string>>(
     source,
     "message"
