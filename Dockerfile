@@ -20,4 +20,4 @@ COPY --from=frontend /app/dist /app/src/dist
 ENV STATIC_PATH=/app/src/dist
 ENV ENV=production
 EXPOSE ${PORT}
-CMD ["/app/semyi"]
+CMD ["/app/src/semyi"]
