@@ -10,6 +10,7 @@ import type { Response, Endpoint } from "@/types";
 import config from "@config";
 import styles from "./styles.module.css";
 import { LeftArrowIcon } from "@/icons";
+import { BASE_URL } from "@/constants";
 
 export default function DetailPage() {
   const [searchParams] = useSearchParams();
@@ -17,7 +18,7 @@ export default function DetailPage() {
     return <Navigate href="/" />;
   }
 
-  const endpoint: Endpoint | undefined = config.find(
+  const endpoint: Endpoint | undefined = config.endpoints.find(
     ({ name }) => name === decodeURIComponent(searchParams.name)
   );
   if (endpoint === undefined) {
@@ -28,7 +29,7 @@ export default function DetailPage() {
     fetchSingleStaticSnapshot(endpoint.url)
   );
 
-  const source = new EventSource("/api/by?url=" + endpoint.url);
+  const source = new EventSource(BASE_URL + "/api/by?url=" + endpoint.url);
   const snapshotStream$ = fromEvent<MessageEvent<string>>(
     source,
     "message"

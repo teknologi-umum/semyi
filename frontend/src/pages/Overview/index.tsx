@@ -7,6 +7,7 @@ import Notice from "@/components/Notice";
 import type { Response } from "@/types";
 import config from "@config";
 import styles from "./styles.module.css";
+import { BASE_URL } from "@/constants";
 
 export default function OverviewPage() {
   const [staticSnapshot] = createResource(() =>
@@ -30,7 +31,7 @@ export default function OverviewPage() {
             <For each={staticSnapshot()}>
               {(snapshot) => {
                 const source = new EventSource(
-                  "/api/by?url=" + snapshot[0].url
+                  BASE_URL + "/api/by?url=" + snapshot[0].url
                 );
                 const snapshotStream$ = fromEvent<MessageEvent<string>>(
                   source,
