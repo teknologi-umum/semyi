@@ -10,7 +10,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/go-chi/chi/v5"
 	"github.com/rs/cors"
 	"github.com/unrolled/secure"
 )
@@ -36,20 +35,39 @@ func (d *Deps) NewServer(port, staticPath string) *http.Server {
 		AllowedHeaders: []string{"Content-Type"},
 	})
 
-	api := chi.NewRouter()
-	api.Use(corsMiddleware.Handler)
-	api.Get("/overview", d.snapshotOverview)
-	api.Get("/by", d.snapshotBy)
-	api.Get("/static", d.staticSnapshot)
+	api := http.NewServeMux()
+	api.HandleFunc("/overview", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet {
+			d.snapshotOverview(w, r)
+			return
+		}
 
-	r := chi.NewRouter()
-	r.Use(secureMiddleware.Handler)
-	r.Mount("/api", api)
+		w.WriteHeader(http.StatusMethodNotAllowed)
+	})
+	api.HandleFunc("/by", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet {
+			d.snapshotBy(w, r)
+			return
+		}
+
+		w.WriteHeader(http.StatusMethodNotAllowed)
+	})
+	api.HandleFunc("/static", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet {
+			http.ServeFile(w, r, staticPath)
+			return
+		}
+
+		w.WriteHeader(http.StatusMethodNotAllowed)
+	})
+
+	r := http.NewServeMux()
+	r.Handle("/api", corsMiddleware.Handler(api))
 	r.Handle("/", http.FileServer(http.Dir(staticPath)))
 
 	return &http.Server{
 		Addr:    ":" + port,
-		Handler: r,
+		Handler: secureMiddleware.Handler(r),
 	}
 }
 

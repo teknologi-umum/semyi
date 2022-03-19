@@ -4,7 +4,6 @@ go 1.17
 
 require (
 	github.com/allegro/bigcache/v3 v3.0.1
-	github.com/go-chi/chi/v5 v5.0.7
 	github.com/rs/cors v1.8.2
 	github.com/unrolled/secure v1.0.9
 	modernc.org/sqlite v1.14.5
