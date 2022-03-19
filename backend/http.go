@@ -36,7 +36,7 @@ func (d *Deps) NewServer(port, staticPath string) *http.Server {
 	})
 
 	api := http.NewServeMux()
-	api.HandleFunc("/overview", func(w http.ResponseWriter, r *http.Request) {
+	api.HandleFunc("/api/overview", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet {
 			d.snapshotOverview(w, r)
 			return
@@ -44,7 +44,7 @@ func (d *Deps) NewServer(port, staticPath string) *http.Server {
 
 		w.WriteHeader(http.StatusMethodNotAllowed)
 	})
-	api.HandleFunc("/by", func(w http.ResponseWriter, r *http.Request) {
+	api.HandleFunc("/api/by", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet {
 			d.snapshotBy(w, r)
 			return
@@ -52,7 +52,7 @@ func (d *Deps) NewServer(port, staticPath string) *http.Server {
 
 		w.WriteHeader(http.StatusMethodNotAllowed)
 	})
-	api.HandleFunc("/static", func(w http.ResponseWriter, r *http.Request) {
+	api.HandleFunc("/api/static", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet {
 			d.staticSnapshot(w, r)
 			return
@@ -62,7 +62,7 @@ func (d *Deps) NewServer(port, staticPath string) *http.Server {
 	})
 
 	r := http.NewServeMux()
-	r.Handle("/api", corsMiddleware.Handler(api))
+	r.Handle("/api/", corsMiddleware.Handler(api))
 	r.Handle("/", http.FileServer(http.Dir(staticPath)))
 
 	return &http.Server{
