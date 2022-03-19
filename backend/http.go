@@ -54,7 +54,7 @@ func (d *Deps) NewServer(port, staticPath string) *http.Server {
 	})
 	api.HandleFunc("/static", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet {
-			http.ServeFile(w, r, staticPath)
+			d.staticSnapshot(w, r)
 			return
 		}
 
