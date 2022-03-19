@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/go-chi/chi/v5"
@@ -15,10 +16,16 @@ import (
 )
 
 func (d *Deps) NewServer(port, staticPath string) *http.Server {
+	sslRedirect := os.Getenv("ENV") == "production"
+
+	if sslRedirectEnv, ok := os.LookupEnv("SSL_REDIRECT"); ok {
+		sslRedirect, _ = strconv.ParseBool(sslRedirectEnv)
+	}
+
 	secureMiddleware := secure.New(secure.Options{
 		BrowserXssFilter:   true,
 		ContentTypeNosniff: true,
-		SSLRedirect:        os.Getenv("ENV") == "production",
+		SSLRedirect:        sslRedirect,
 		IsDevelopment:      os.Getenv("ENV") == "development",
 	})
 
