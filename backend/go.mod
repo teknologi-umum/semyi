@@ -1,30 +1,37 @@
 module semyi
 
-go 1.17
+go 1.21
+
+toolchain go1.22.2
 
 require (
+	github.com/BurntSushi/toml v1.3.2
 	github.com/allegro/bigcache/v3 v3.0.1
+	github.com/go-chi/chi/v5 v5.0.12
+	github.com/marcboeker/go-duckdb v1.6.5
+	github.com/prometheus-community/pro-bing v0.4.0
 	github.com/rs/cors v1.8.2
+	github.com/rs/zerolog v1.32.0
 	github.com/unrolled/secure v1.0.9
-	modernc.org/sqlite v1.14.5
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
-	github.com/google/uuid v1.3.0 // indirect
-	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 // indirect
-	github.com/mattn/go-isatty v0.0.12 // indirect
-	github.com/remyoudompheng/bigfft v0.0.0-20200410134404-eec4a21b6bb0 // indirect
-	golang.org/x/mod v0.3.0 // indirect
-	golang.org/x/sys v0.0.0-20211007075335-d3039528d8ac // indirect
-	golang.org/x/tools v0.0.0-20201124115921-2c860bdd6e78 // indirect
-	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
-	lukechampine.com/uint128 v1.1.1 // indirect
-	modernc.org/cc/v3 v3.35.22 // indirect
-	modernc.org/ccgo/v3 v3.15.1 // indirect
-	modernc.org/libc v1.14.1 // indirect
-	modernc.org/mathutil v1.4.1 // indirect
-	modernc.org/memory v1.0.5 // indirect
-	modernc.org/opt v0.1.1 // indirect
-	modernc.org/strutil v1.1.1 // indirect
-	modernc.org/token v1.0.0 // indirect
+	github.com/apache/arrow/go/v14 v14.0.2 // indirect
+	github.com/goccy/go-json v0.10.2 // indirect
+	github.com/google/flatbuffers v23.5.26+incompatible // indirect
+	github.com/google/uuid v1.6.0 // indirect
+	github.com/klauspost/compress v1.16.7 // indirect
+	github.com/klauspost/cpuid/v2 v2.2.5 // indirect
+	github.com/mattn/go-colorable v0.1.13 // indirect
+	github.com/mattn/go-isatty v0.0.19 // indirect
+	github.com/mitchellh/mapstructure v1.5.0 // indirect
+	github.com/pierrec/lz4/v4 v4.1.18 // indirect
+	github.com/zeebo/xxh3 v1.0.2 // indirect
+	golang.org/x/mod v0.13.0 // indirect
+	golang.org/x/net v0.21.0 // indirect
+	golang.org/x/sync v0.6.0 // indirect
+	golang.org/x/sys v0.17.0 // indirect
+	golang.org/x/tools v0.14.0 // indirect
+	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 )

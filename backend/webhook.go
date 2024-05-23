@@ -16,7 +16,7 @@ const (
 )
 
 type WebhookInformation struct {
-	Endpoint        string `json:"endpoint"`
+	Endpoint        string `json:"monitor"`
 	Status          Status `json:"status"`
 	StatusCode      int    `json:"statusCode"`
 	RequestDuration int64  `json:"requestDuration"`

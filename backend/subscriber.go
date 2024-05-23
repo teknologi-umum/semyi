@@ -2,96 +2,43 @@ package main
 
 import (
 	"context"
-	"database/sql"
-	"encoding/json"
 	"errors"
-	"log"
-	"time"
-
-	"github.com/allegro/bigcache/v3"
+	"fmt"
 )
 
 type Subscriber struct {
-	url   []string
-	db    *sql.DB
-	cache *bigcache.BigCache
-	queue *Queue
+	subscribers []*BrokerSubscriber[MonitorHistorical]
+	ch          chan MonitorHistorical
 }
 
-func (d *Deps) NewSubscriber(url ...string) (*Subscriber, error) {
-	if len(url) == 0 {
-		return &Subscriber{}, errors.New("no url provided")
+func NewSubscriber(centralBroker *Broker[MonitorHistorical], monitorIds ...string) (*Subscriber, error) {
+	if len(monitorIds) == 0 {
+		return &Subscriber{}, errors.New("no monitorIds provided")
+	}
+
+	ch := make(chan MonitorHistorical)
+	var subscribers []*BrokerSubscriber[MonitorHistorical]
+	// create a new BrokerSubscriber
+	for _, monitorId := range monitorIds {
+		subscriber, err := centralBroker.Subscribe(monitorId, func(event BrokerEvent[MonitorHistorical]) error {
+			// send the event to the channel
+			message := event.Message()
+			ch <- message.Body
+			return nil
+		})
+		if err != nil {
+			return &Subscriber{}, fmt.Errorf("failed to subscribe to monitor %s: %w", monitorId, err)
+		}
+
+		subscribers = append(subscribers, subscriber)
+
 	}
 	return &Subscriber{
-		url:   url,
-		db:    d.DB,
-		cache: d.Cache,
-		queue: d.Queue,
+		subscribers: subscribers,
+		ch:          ch,
 	}, nil
 }
 
-func (s *Subscriber) Listen(ctx context.Context) <-chan Response {
-	ch := make(chan Response)
-
-	go func() {
-		defer func() {
-			if r := recover(); r != nil {
-				log.Printf("[Subscriber-Listen] Recovered from panic: %v", r)
-			}
-		}()
-
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			default:
-				// listen for changes in s.queue.Items
-				item, err := s.queue.LatestItem()
-				if err != nil {
-					if errors.Is(err, ErrEmptyQueue) {
-						continue
-					}
-					log.Println("Error dequeueing item from queue:", err)
-					continue
-				}
-
-				// check if current item is in cache
-				cached, err := s.cache.Get(item.URL)
-				if err != nil {
-					// TODO(elianiva): proper error handling
-					log.Println("Error getting cached item")
-					continue
-				}
-
-				itemStr, err := json.Marshal(item)
-				if err != nil {
-					// TODO(elianiva): proper error handling
-					log.Println("Error marshalling")
-					continue
-				}
-
-				if string(itemStr) == string(cached) {
-					continue
-				}
-
-				if contains(item.URL, s.url) {
-					// send item to ch
-					ch <- item
-				}
-			}
-
-			time.Sleep(time.Second * 1)
-		}
-	}()
-
-	return ch
-}
-
-func contains(item string, items []string) bool {
-	for _, i := range items {
-		if i == item {
-			return true
-		}
-	}
-	return false
+func (s *Subscriber) Listen(ctx context.Context) <-chan MonitorHistorical {
+	return s.ch
 }
