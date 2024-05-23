@@ -1,18 +1,20 @@
 root = true
 
 [*]
-end_of_line = lf
 charset = utf-8
-trim_trailing_whitespace = true
-insert_final_newline = true
-max_line_length = 80
-
-[*.go]
+end_of_line = lf
 indent_size = 4
-indent_style = tab
+indent_style = space
+insert_final_newline = false
+max_line_length = 120
 tab_width = 4
 
-[*.{js,jsx,ts,tsx,json,css,scss,less,sass,html,yml,md}]
-indent_style = space
+[{*.bash,*.sh,*.zsh}]
 indent_size = 2
-end_of_line = lf
+tab_width = 2
+
+[{*.har,*.jsb2,*.jsb3,*.json,*.jsonc,*.postman_collection,*.postman_collection.json,*.postman_environment,*.postman_environment.json,.babelrc,.eslintrc,bowerrc,jest.config}]
+indent_size = 2
+
+[{*.yaml,*.yml}]
+indent_size = 2

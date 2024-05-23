@@ -1,0 +1,56 @@
+name: PR
+
+on:
+  pull_request:
+
+jobs:
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-latest
+    container: node:20-bookworm
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: ./frontend
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: latest
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Lint
+        run: npx eslint --ignore-path .gitignore .
+
+      - name: Build
+        run: pnpm run build
+
+      - name: Test
+        run: pnpm run test
+
+      - uses: codecov/codecov-action@v3
+
+  backend:
+    name: Backend
+    runs-on: ubuntu-latest
+    container: golang:1.22-bookworm
+    defaults:
+      run:
+        working-directory: ./backend
+    timeout-minutes: 30
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build
+        run: go build -buildvcs=false .
+
+      - name: Test
+        run: go test -v
+
+      - uses: codecov/codecov-action@v3
