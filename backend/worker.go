@@ -88,7 +88,7 @@ func (w *Worker) Run() {
 		}
 
 		// Insert the response to the database
-		w.processor.ProcessResponse(response)
+		go w.processor.ProcessResponse(response)
 
 		// Sleep for the interval
 		time.Sleep(time.Duration(w.monitor.Interval) * time.Second)

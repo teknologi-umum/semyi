@@ -48,7 +48,7 @@ func Migrate(db *sql.DB, ctx context.Context, directionUp bool) error {
 	for _, file := range files {
 		content, err := migrationFiles.Open(file)
 		if err != nil {
-			if content != nil && content.Close != nil {
+			if content != nil {
 				_ = content.Close()
 			}
 
