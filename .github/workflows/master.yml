@@ -1,0 +1,100 @@
+name: Master
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-latest
+    container: node:20-bookworm
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: ./frontend
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: latest
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Lint
+        run: npx eslint --ignore-path .gitignore .
+
+      - name: Build
+        run: pnpm run build
+
+      - name: Test
+        run: pnpm run test
+
+      - uses: codecov/codecov-action@v3
+
+  backend:
+    name: Backend
+    runs-on: ubuntu-latest
+    container: golang:1.22-bookworm
+    defaults:
+      run:
+        working-directory: ./backend
+    timeout-minutes: 30
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build
+        run: go build .
+
+      - name: Test
+        run: go test -v
+
+      - uses: codecov/codecov-action@v3
+
+  cd:
+    name: CD
+    needs:
+      - frontend
+      - backend
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          flavor: |
+            latest=false
+          tags: |
+            type=edge
+            type=sha
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          secrets: |
+            "SENTRY_DSN=${{ secrets.SENTRY_DSN }}"
+            "SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }}"

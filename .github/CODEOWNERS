@@ -1,0 +1,5 @@
+* @teknologi-umum/frontend-web @teknologi-umum/backend-go
+frontend @teknologi-umum/frontend-web
+backend @teknologi-umum/backend-go
+.github @teknologi-umum/infrastructure
+Dockerfile @teknologi-umum/infrastructure @teknologi-umum/frontend-web @teknologi-umum/backend-go
