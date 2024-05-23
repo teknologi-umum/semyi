@@ -3,9 +3,7 @@ package main
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"errors"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -14,17 +12,13 @@ import (
 	"time"
 
 	"github.com/allegro/bigcache/v3"
-	_ "modernc.org/sqlite"
+	_ "github.com/marcboeker/go-duckdb"
+	"github.com/rs/zerolog/log"
 )
 
-type Deps struct {
-	DB              *sql.DB
-	Queue           *Queue
-	Cache           *bigcache.BigCache
-	DefaultTimeout  int
-	DefaultInterval int
-	Webhook         *Webhook
-}
+var DefaultInterval int = 30
+var DefaultTimeout int = 10
+var monitorIds []string
 
 func main() {
 	// Read environment variables
@@ -35,7 +29,7 @@ func main() {
 
 	dbPath, ok := os.LookupEnv("DB_PATH")
 	if !ok {
-		dbPath = "../db.sqlite3"
+		dbPath = "../db.duckdb"
 	}
 
 	staticPath, ok := os.LookupEnv("STATIC_PATH")
@@ -61,161 +55,106 @@ func main() {
 	if os.Getenv("ENV") == "" {
 		err := os.Setenv("ENV", "development")
 		if err != nil {
-			log.Fatalf("Error setting ENV: %v", err)
+			log.Fatal().Err(err).Msg("Error setting ENV")
 		}
-	}
-
-	defTimeout, err := strconv.Atoi(defaultTimeout)
-	if err != nil {
-		log.Fatalf("Failed to parse default timeout: %v", err)
-	}
-
-	defInterval, err := strconv.Atoi(defaultInterval)
-	if err != nil {
-		log.Fatalf("Failed to parse default interval: %v", err)
 	}
 
 	// Read configuration file
 	config, err := ReadConfigurationFile(configPath)
 	if err != nil {
-		log.Fatalf("failed to read configuration file: %v", err)
+		log.Fatal().Err(err).Msg("failed to read configuration file")
 	}
 
-	db, err := sql.Open("sqlite", dbPath)
+	DefaultTimeout, err = strconv.Atoi(defaultTimeout)
 	if err != nil {
-		log.Fatalf("failed to open database: %v", err)
+		log.Fatal().Err(err).Msg("Failed to parse default timeout")
 	}
-	defer db.Close()
+
+	DefaultInterval, err = strconv.Atoi(defaultInterval)
+	if err != nil {
+		log.Fatal().Err(err).Msg("Failed to parse default interval")
+	}
+
+	db, err := sql.Open("duckdb", dbPath)
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to open database")
+	}
+	defer func(db *sql.DB) {
+		err := db.Close()
+		if err != nil {
+			log.Fatal().Err(err).Msg("failed to close database")
+		}
+	}(db)
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
-	err = Migrate(db, ctx)
+	err = Migrate(db, ctx, true)
 	if err != nil {
-		log.Fatalf("failed to migrate database: %v", err)
+		log.Fatal().Err(err).Msg("failed to migrate database")
 	}
 
 	cache, err := bigcache.NewBigCache(bigcache.DefaultConfig(time.Hour * 24))
 	if err != nil {
-		log.Fatalf("failed to create cache: %v", err)
+		log.Fatal().Err(err).Msg("failed to create cache")
 	}
 	defer cache.Close()
 
-	deps := &Deps{
-		DB:              db,
-		Cache:           cache,
-		Queue:           NewQueue(),
-		DefaultTimeout:  defTimeout,
-		DefaultInterval: defInterval,
-		Webhook:         &config.Webhook,
-	}
+	processor := &Processor{}
 
 	// Create a new worker
-	for _, endpoint := range config.Endpoints {
-		worker, err := deps.NewWorker(endpoint)
+	for _, monitor := range config.Monitors {
+		monitorIds = append(monitorIds, monitor.UniqueID)
+
+		worker, err := NewWorker(monitor, processor)
 		if err != nil {
-			log.Fatalf("Failed to create worker: %v", err)
+			log.Fatal().Err(err).Msg("Failed to create worker")
 		}
 
-		// register endpoint url into cache
-		err = deps.Cache.Append("endpoint:urls", []byte(endpoint.URL+","))
-		if err != nil {
-			log.Fatalf("Failed to register endpoint url into cache: %v", err)
-		}
+		log.Info().Str("UniqueID", monitor.UniqueID).Str("Name", monitor.Name).Msg("Registered monitor")
 
-		log.Printf("Registered endpoint: %s", endpoint.Name)
-
-		go func() {
+		go func(worker *Worker) {
 			defer func() {
 				if r := recover(); r != nil {
-					log.Printf("[Running worker] Recovered from panic: %v", r)
+					log.Warn().Msgf("[Running worker] Recovered from panic: %v", r)
 				}
 			}()
 
 			worker.Run()
-		}()
-
-		// set the name, description, headers, and method of an endpoint
-		// to the cache
-		data, err := json.Marshal(endpoint)
-		if err != nil {
-			log.Fatalf("Failed to marshal endpoint: %v", err)
-		}
-
-		err = deps.Cache.Set("endpoint:"+endpoint.URL, data)
-		if err != nil {
-			log.Fatalf("Failed to set endpoint data into cache: %v", err)
-		}
+		}(worker)
 	}
 
-	// Dump snapshot every 5 seconds
+	// TODO: Create a new worker that process monitor_historical data and create monitor_historical_hourly_aggregate from it
+	// TODO: Create a new worker that process monitor_historical data and create monitor_historical_daily_aggregate from it
+
+	// TODO: Complete the ServerConfig
+	server := NewServer(ServerConfig{
+		SSLRedirect:             false,
+		Environment:             "",
+		Hostname:                "",
+		Port:                    "",
+		StaticPath:              staticPath,
+		MonitorHistoricalReader: nil,
+	})
 	go func() {
-		defer func() {
-			if r := recover(); r != nil {
-				log.Printf("[Dumping snapshot] Recovered from panic: %v", r)
-			}
-		}()
+		// Listen for SIGKILL and SIGTERM
+		signalChan := make(chan os.Signal, 1)
+		signal.Notify(signalChan, os.Interrupt, syscall.SIGTERM)
+		<-signalChan
 
-		for {
-			deps.Queue.Lock()
+		log.Info().Msg("Shutting down server...")
+		ctx, cancel = context.WithTimeout(context.Background(), time.Second*10)
+		defer cancel()
 
-			if len(deps.Queue.Items) > 0 {
-				log.Printf("Dumping snapshot: %d items", len(deps.Queue.Items))
-				ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
-
-				err := deps.WriteSnapshot(ctx, deps.Queue.Items)
-				if err != nil {
-					cancel()
-					log.Printf("Failed to write snapshot: %v", err)
-				}
-
-				if err == nil {
-					deps.Queue.Items = []Response{}
-				}
-
-				cancel()
-			}
-
-			deps.Queue.Unlock()
-			time.Sleep(time.Second * 5)
+		err = server.Shutdown(ctx)
+		if err != nil {
+			log.Fatal().Err(err).Msg("Failed to shutdown server")
 		}
 	}()
 
-	server := deps.NewServer(port, staticPath)
-	go func() {
-		defer func() {
-			if r := recover(); r != nil {
-				log.Printf("[HTTP Server] Recovered from panic: %v", r)
-			}
-		}()
-
-		// Start the server
-		log.Printf("Starting server on port %s", port)
-		if e := server.ListenAndServe(); e != nil && !errors.Is(e, http.ErrServerClosed) {
-			log.Fatalf("Failed to start server: %v", e)
-		}
-	}()
-
-	// Listen for SIGKILL and SIGTERM
-	signalChan := make(chan os.Signal, 1)
-	signal.Notify(signalChan, os.Interrupt, syscall.SIGTERM)
-	<-signalChan
-
-	log.Println("\nShutting down server...")
-	ctx, cancel = context.WithTimeout(context.Background(), time.Second*10)
-	defer cancel()
-
-	err = server.Shutdown(ctx)
-	if err != nil {
-		log.Fatalf("Failed to shutdown server: %v", err)
+	// Start the server
+	log.Printf("Starting server on port %s", port)
+	if e := server.ListenAndServe(); e != nil && !errors.Is(e, http.ErrServerClosed) {
+		log.Fatal().Err(err).Msg("Failed to start server")
 	}
-
-	deps.Queue.Lock()
-
-	err = deps.WriteSnapshot(ctx, deps.Queue.Items)
-	if err != nil {
-		log.Printf("Failed to write snapshot: %v", err)
-	}
-
-	deps.Queue.Unlock()
 }

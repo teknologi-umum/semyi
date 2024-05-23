@@ -2,140 +2,195 @@ package main
 
 import (
 	"context"
-	"database/sql"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
+	"strconv"
+	"strings"
 	"time"
 
-	"github.com/allegro/bigcache/v3"
+	probing "github.com/prometheus-community/pro-bing"
+	"github.com/rs/zerolog/log"
 )
 
 type Response struct {
-	Success         bool  `json:"success"`
-	StatusCode      int   `json:"statusCode"`
-	RequestDuration int64 `json:"requestDuration"`
-	Timestamp       int64 `json:"timestamp"`
-	Endpoint
+	Success         bool      `json:"success"`
+	StatusCode      int       `json:"statusCode"`
+	RequestDuration int64     `json:"requestDuration"`
+	Timestamp       time.Time `json:"timestamp"`
+	Monitor
 }
 
+// Worker should only run checks for a single monitor, with specific type (HTTP or ICMP monitor).
+// For each monitor result (success or fail), it should push the result into the monitor processor.
 type Worker struct {
-	endpoint *Endpoint
-	db       *sql.DB
-	queue    *Queue
-	cache    *bigcache.BigCache
-	webhook  *Webhook
+	monitor   Monitor
+	processor *Processor
 }
 
-func (d *Deps) NewWorker(e Endpoint) (*Worker, error) {
-	// Validate the endpoint
-	var endpoint = &e
-	_, err := ValidateEndpoint(*endpoint)
+func NewWorker(monitor Monitor, processor *Processor) (*Worker, error) {
+	// Validate the monitor
+	_, err := monitor.Validate()
 	if err != nil {
 		return &Worker{}, err
 	}
 
-	if endpoint.Interval == 0 {
-		endpoint.Interval = d.DefaultInterval
+	// Set default values
+	if monitor.Interval == 0 {
+		monitor.Interval = DefaultInterval
 	}
 
-	if endpoint.Timeout == 0 {
-		endpoint.Timeout = d.DefaultTimeout
+	if monitor.Timeout == 0 {
+		monitor.Timeout = DefaultTimeout
 	}
 
-	if endpoint.Method == "" {
-		endpoint.Method = http.MethodGet
+	if monitor.HttpMethod == "" {
+		monitor.HttpMethod = http.MethodGet
+	}
+
+	if monitor.HttpExpectedStatusCode == "" {
+		monitor.HttpExpectedStatusCode = "2xx"
+	}
+
+	if monitor.IcmpPacketSize <= 0 {
+		monitor.IcmpPacketSize = 56
 	}
 
 	return &Worker{
-		endpoint: endpoint,
-		db:       d.DB,
-		queue:    d.Queue,
-		cache:    d.Cache,
-		webhook:  d.Webhook,
+		monitor:   monitor,
+		processor: processor,
 	}, nil
 }
 
 func (w *Worker) Run() {
 	for {
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second*time.Duration(w.endpoint.Timeout))
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*time.Duration(w.monitor.Timeout))
 
+		var response Response
+		var err error
 		// Make the request
-		response, err := w.makeRequest(ctx)
-		if err != nil {
-			cancel()
-			log.Printf("Failed to make request: %v", err)
-			continue
+		switch w.monitor.Type {
+		case MonitorTypeHTTP:
+			response, err = w.makeHttpRequest(ctx)
+			if err != nil {
+				cancel()
+				log.Error().Err(err).Msg("failed to make http request")
+				continue
+			}
+			break
+		case MonitorTypePing:
+			response, err = w.makeIcmpRequest(ctx)
+			if err != nil {
+				cancel()
+				log.Error().Err(err).Msg("failed to make icmp request")
+				continue
+			}
 		}
 
 		// Insert the response to the database
-		err = w.addToQueue(response)
-		if err != nil {
-			cancel()
-			log.Printf("Failed to insert response to the database: %v", err)
-			continue
-		}
-
-		err = w.webhook.Send(ctx, *response)
-		if err != nil {
-			cancel()
-			log.Printf("Failed to send webhook: %v", err)
-			continue
-		}
+		go w.processor.ProcessResponse(response)
 
 		// Sleep for the interval
-		time.Sleep(time.Duration(w.endpoint.Interval) * time.Second)
+		time.Sleep(time.Duration(w.monitor.Interval) * time.Second)
 	}
 }
 
-func (w *Worker) makeRequest(ctx context.Context) (*Response, error) {
-	timeStart := time.Now().UnixMilli()
+func (w *Worker) parseExpectedStatusCode(got int) bool {
+	// Valid values:
+	// * 200 -> Direct 200 status code
+	// * 2xx -> Any 2xx status code (200-299)
+	// * 200-300 -> Any 200-300 status code (inclusive)
+	// * 2xx-3xx -> Any 2xx (200-299) and 3xx (300-399) status code (inclusive)
 
-	req, err := http.NewRequestWithContext(ctx, w.endpoint.Method, w.endpoint.URL, nil)
-	if err != nil && !errors.Is(err, context.DeadlineExceeded) {
-		return &Response{}, fmt.Errorf("failed to create request: %v", err)
+	if w.monitor.HttpExpectedStatusCode == strconv.Itoa(got) {
+		return true
 	}
 
-	if len(w.endpoint.Headers) > 0 {
-		for key, value := range w.endpoint.Headers {
+	parts := strings.Split(w.monitor.HttpExpectedStatusCode, "-")
+	ok := false
+	for _, part := range parts {
+		if ok {
+			break
+		}
+
+		expectedSmallerParts := strings.Split(part, "")
+		gotSmallerParts := strings.Split(strconv.Itoa(got), "")
+
+		for i, expectedPart := range expectedSmallerParts {
+			if expectedPart == "x" {
+				continue
+			}
+
+			if expectedPart == gotSmallerParts[i] {
+				ok = true
+				continue
+			}
+
+			if expectedPart != gotSmallerParts[i] {
+				ok = false
+				break
+			}
+		}
+	}
+
+	return false
+}
+
+func (w *Worker) makeHttpRequest(ctx context.Context) (Response, error) {
+	timeStart := time.Now().UnixMilli()
+
+	req, err := http.NewRequestWithContext(ctx, w.monitor.HttpMethod, w.monitor.HttpEndpoint, nil)
+	if err != nil && !errors.Is(err, context.DeadlineExceeded) {
+		return Response{}, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	if len(w.monitor.HttpHeaders) > 0 {
+		for key, value := range w.monitor.HttpHeaders {
 			req.Header.Add(key, value)
 		}
 	}
 
-	client := http.Client{
-		Timeout: time.Duration(w.endpoint.Timeout) * time.Second,
+	client := &http.Client{
+		Timeout: time.Duration(w.monitor.Timeout) * time.Second,
 	}
 
 	resp, err := client.Do(req)
 	if err != nil && !errors.Is(err, context.DeadlineExceeded) {
-		return &Response{}, fmt.Errorf("failed to make request: %v", err)
+		return Response{}, fmt.Errorf("failed to make request: %w", err)
 	}
 
 	timeEnd := time.Now().UnixMilli()
-	return &Response{
-		Success:         resp.StatusCode == 200,
+	return Response{
+		Success:         w.parseExpectedStatusCode(resp.StatusCode),
 		StatusCode:      resp.StatusCode,
 		RequestDuration: timeEnd - timeStart,
-		Timestamp:       time.Now().UnixMilli(),
-		Endpoint:        *w.endpoint,
+		Timestamp:       time.Now(),
+		Monitor:         w.monitor,
 	}, nil
 }
 
-func (w *Worker) addToQueue(response *Response) error {
-	w.queue.Lock()
-	w.queue.Items = append(w.queue.Items, *response)
-	w.queue.Unlock()
-
-	data, err := json.Marshal(response)
+func (w *Worker) makeIcmpRequest(ctx context.Context) (Response, error) {
+	pinger, err := probing.NewPinger(w.monitor.IcmpHostname)
 	if err != nil {
-		return err
+		return Response{}, fmt.Errorf("failed to create pinger: %w", err)
 	}
 
-	err = w.cache.Set(w.endpoint.URL, data)
+	pinger.Count = 1
+	pinger.Size = w.monitor.IcmpPacketSize
+	pinger.Timeout = time.Duration(w.monitor.Timeout) * time.Second
+
+	err = pinger.Run()
 	if err != nil {
-		return err
+		return Response{}, fmt.Errorf("failed to run pinger: %w", err)
 	}
-	return nil
+
+	stats := pinger.Statistics()
+
+	return Response{
+		Success:         stats.PacketsRecv > 0,
+		StatusCode:      0,
+		RequestDuration: int64(stats.AvgRtt / time.Millisecond),
+		Timestamp:       time.Now(),
+		Monitor:         w.monitor,
+	}, nil
 }
