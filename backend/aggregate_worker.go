@@ -37,7 +37,7 @@ func (w *AggregateWorker) RunHourlyAggregate() {
 			var toTime = fromTime.Add(1 * time.Hour)
 			var lastHourData []MonitorHistorical
 			for _, data := range historicalData {
-				if data.Timestamp.After(fromTime) && data.Timestamp.Before(toTime) {
+				if data.Timestamp.Equal(fromTime) || (data.Timestamp.After(fromTime) && data.Timestamp.Before(toTime)) {
 					lastHourData = append(lastHourData, data)
 				}
 			}
@@ -82,7 +82,7 @@ func (w *AggregateWorker) RunDailyAggregate() {
 			var toTime = fromTime.Add(24 * time.Hour)
 			var lastHourData []MonitorHistorical
 			for _, data := range historicalData {
-				if data.Timestamp.After(fromTime) && data.Timestamp.Before(toTime) {
+				if data.Timestamp.Equal(fromTime) || (data.Timestamp.After(fromTime) && data.Timestamp.Before(toTime)) {
 					lastHourData = append(lastHourData, data)
 				}
 			}
