@@ -17,7 +17,7 @@ import (
 var migrationFiles embed.FS
 
 func Migrate(db *sql.DB, ctx context.Context, directionUp bool) error {
-	dir, err := migrationFiles.ReadDir("./")
+	dir, err := migrationFiles.ReadDir("migrations")
 	if err != nil {
 		return fmt.Errorf("failed to read migrations directory: %w", err)
 	}
@@ -44,9 +44,8 @@ func Migrate(db *sql.DB, ctx context.Context, directionUp bool) error {
 	})
 
 	var migrationScripts []string
-
 	for _, file := range files {
-		content, err := migrationFiles.Open(file)
+		content, err := migrationFiles.Open("migrations/" + file)
 		if err != nil {
 			if content != nil {
 				_ = content.Close()
@@ -74,6 +73,7 @@ func Migrate(db *sql.DB, ctx context.Context, directionUp bool) error {
 					}
 
 					contentAccumulator.WriteString(line)
+					contentAccumulator.WriteString("\n")
 				}
 			}
 		} else {
@@ -91,6 +91,7 @@ func Migrate(db *sql.DB, ctx context.Context, directionUp bool) error {
 					}
 
 					contentAccumulator.WriteString(line)
+					contentAccumulator.WriteString("\n")
 				}
 			}
 		}
@@ -118,7 +119,7 @@ func Migrate(db *sql.DB, ctx context.Context, directionUp bool) error {
 		}
 	}()
 
-	tx, err := c.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable, ReadOnly: false})
+	tx, err := c.BeginTx(ctx, &sql.TxOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
