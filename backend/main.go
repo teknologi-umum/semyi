@@ -16,9 +16,11 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-var DefaultInterval int = 30
-var DefaultTimeout int = 10
-var monitorIds []string
+var (
+	DefaultInterval int = 30
+	DefaultTimeout  int = 10
+	monitorIds      []string
+)
 
 func main() {
 	// Read environment variables
@@ -132,9 +134,9 @@ func main() {
 		SSLRedirect:             false,
 		Environment:             "",
 		Hostname:                "",
-		Port:                    "",
+		Port:                    port,
 		StaticPath:              staticPath,
-		MonitorHistoricalReader: nil,
+		MonitorHistoricalReader: NewMonitorHistoricalReader(db),
 	})
 	go func() {
 		// Listen for SIGKILL and SIGTERM
