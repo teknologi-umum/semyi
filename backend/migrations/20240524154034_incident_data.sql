@@ -1,13 +1,14 @@
 -- +goose Up
 -- +goose StatementBegin
 CREATE TABLE incident_data (
-    instance_id VARCHAR(255) NOT NULL,
     incident_id VARCHAR(255) NOT NULL,
+    monitor_id VARCHAR(255) NOT NULL,
     title VARCHAR(255) NOT NULL,
-    description VARCHAR(255) NOT NULL,
-    timestamp TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    description TEXT NOT NULL,
+    timestamp TIMESTAMPTZ NOT NULL,
     severity SMALLINT NOT NULL,
     status SMALLINT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_by VARCHAR(255) NOT NULL
 );
 
