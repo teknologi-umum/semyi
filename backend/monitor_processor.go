@@ -1,6 +1,10 @@
 package main
 
-import "github.com/rs/zerolog/log"
+import (
+	"context"
+
+	"github.com/rs/zerolog/log"
+)
 
 type Processor struct {
 	historicalWriter *MonitorHistoricalWriter
@@ -21,7 +25,7 @@ func (m *Processor) ProcessResponse(response Response) {
 
 	// TODO: Retry write if it fails
 	// Write the response to the historical writer
-	err := m.historicalWriter.Write(MonitorHistorical{
+	err := m.historicalWriter.Write(context.Background(), MonitorHistorical{
 		MonitorID: uniqueId,
 		Status:    status,
 		Latency:   response.RequestDuration,
