@@ -18,6 +18,7 @@ import (
 type Server struct {
 	historicalReader *MonitorHistoricalReader
 	centralBroker    *Broker[MonitorHistorical]
+	monitors         []Monitor
 }
 
 type ServerConfig struct {
@@ -28,11 +29,14 @@ type ServerConfig struct {
 	StaticPath              string
 	MonitorHistoricalReader *MonitorHistoricalReader
 	CentralBroker           *Broker[MonitorHistorical]
+	MonitorList             []Monitor
 }
 
 func NewServer(config ServerConfig) *http.Server {
 	server := &Server{
 		historicalReader: config.MonitorHistoricalReader,
+		centralBroker:    config.CentralBroker,
+		monitors:         config.MonitorList,
 	}
 
 	secureMiddleware := secure.New(secure.Options{
@@ -208,7 +212,6 @@ func (s *Server) staticSnapshot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: Acquire monitor metadata
 	var err error
 	var monitor Monitor
 	var monitorHistorical []MonitorHistorical
@@ -242,6 +245,14 @@ func (s *Server) staticSnapshot(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.Write([]byte(`{"error": "interval must be hourly, daily, or raw"}`))
 		return
+	}
+
+	// Acquire monitor metadata
+	for _, m := range s.monitors {
+		if m.UniqueID == monitorId {
+			monitor = m
+			break
+		}
 	}
 
 	data, err := json.Marshal(map[string]any{
