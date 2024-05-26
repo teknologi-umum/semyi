@@ -46,12 +46,12 @@ type Monitor struct {
 	Timeout int `json:"timeout" yaml:"timeout" toml:"timeout"`
 	// HttpHeaders specifies additional headers that are used for the HTTP request. It's a key-value pair where the key
 	// specifies the header name and the value specifies the header value. This is optional.
-	HttpHeaders map[string]string `json:"headers" yaml:"headers" toml:"headers"`
+	HttpHeaders map[string]string `json:"http_headers" yaml:"http_headers" toml:"http_headers"`
 	// HttpMethod specifies the HTTP method that will be used for the HTTP request. It can be anything.
 	// If not provided, it'll default to "GET".
-	HttpMethod string `json:"method" yaml:"method" toml:"method"`
+	HttpMethod string `json:"http_method" yaml:"http_method" toml:"http_method"`
 	// HttpEndpoint specifies the HTTP monitor that will be used for the HTTP request. It must be a valid URL.
-	HttpEndpoint string `json:"monitor" yaml:"monitor" toml:"monitor"`
+	HttpEndpoint string `json:"http_endpoint" yaml:"http_endpoint" toml:"http_endpoint"`
 	// HttpExpectedStatusCode specifies the expected status code for the HTTP request. If the status code is not the same
 	// as the expected status code, it'll be considered as a failed check. The format of the value follows Caddy's health
 	// check format: 200, 2xx, 200-300, 200-400, 2xx-4xx. This is optional. Defaults to 2xx.
