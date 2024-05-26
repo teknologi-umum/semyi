@@ -14,12 +14,12 @@ importers:
       '@fontsource/libre-franklin':
         specifier: ^5.0.18
         version: 5.0.18
+      '@solidjs/router':
+        specifier: ^0.13.3
+        version: 0.13.3(solid-js@1.8.17)
       rxjs:
         specifier: ^7.8.1
         version: 7.8.1
-      solid-app-router:
-        specifier: ^0.4.2
-        version: 0.4.2(solid-js@1.8.17)
       solid-js:
         specifier: ^1.8.17
         version: 1.8.17
@@ -27,6 +27,9 @@ importers:
       '@teknologi-umum/eslint-config-base':
         specifier: ^0.0.11
         version: 0.0.11(eslint@8.57.0)
+      '@types/node':
+        specifier: ^20.12.12
+        version: 20.12.12
       '@typescript-eslint/eslint-plugin':
         specifier: ^5.62.0
         version: 5.62.0(@typescript-eslint/parser@5.62.0(eslint@8.57.0)(typescript@4.9.5))(eslint@8.57.0)(typescript@4.9.5)
@@ -47,10 +50,10 @@ importers:
         version: 4.9.5
       vite:
         specifier: ^5.2.11
-        version: 5.2.11
+        version: 5.2.11(@types/node@20.12.12)
       vite-plugin-solid:
         specifier: ^2.10.2
-        version: 2.10.2(solid-js@1.8.17)(vite@5.2.11)
+        version: 2.10.2(solid-js@1.8.17)(vite@5.2.11(@types/node@20.12.12))
 
 packages:
 
@@ -445,6 +448,11 @@ packages:
     cpu: [x64]
     os: [win32]
 
+  '@solidjs/router@0.13.3':
+    resolution: {integrity: sha512-p8zznlvnN3KySMXqT8irhubgDNTETNa/guaGHU/cZl7kuiPO3PmkWNYfoNCygtEpoxLmLpf62/ZKeyhFdZexsw==}
+    peerDependencies:
+      solid-js: ^1.8.6
+
   '@teknologi-umum/eslint-config-base@0.0.11':
     resolution: {integrity: sha512-KbVXkIcrJIXRSH4JGmEMaJYD0aYlodPp/qHVUsZ3VIJMiwjpPX0qtpW1/ehRsLm3f1vZjo0aFymo+5nVFD24HQ==}
     peerDependencies:
@@ -467,6 +475,9 @@ packages:
 
   '@types/json-schema@7.0.15':
     resolution: {integrity: sha512-5+fP8P8MFNC+AyZCDxrB2pkZFPGzqQWUzpSeuuVLvm8VMcorNYavBqoFcxK8bQz4Qsbn4oUEEem4wDLfcysGHA==}
+
+  '@types/node@20.12.12':
+    resolution: {integrity: sha512-eWLDGF/FOSPtAvEqeRAQ4C8LSA7M1I7i0ky1I8U7kD1J5ITyW3AsRhQrKVoWf5pFKZ2kILsEGJhsI9r93PYnOw==}
 
   '@types/semver@7.5.8':
     resolution: {integrity: sha512-I8EUhyrgfLrcTkzV3TSsGyl1tSuPrEDzr0yd5m90UgNxQkyDXULk3b6MlQqTCpZpNtWe1K0hzclnZkTcLBe2UQ==}
@@ -1127,11 +1138,6 @@ packages:
     resolution: {integrity: sha512-g9Q1haeby36OSStwb4ntCGGGaKsaVSjQ68fBxoQcutl5fS1vuY18H3wSt3jFyFtrkx+Kz0V1G85A4MyAdDMi2Q==}
     engines: {node: '>=8'}
 
-  solid-app-router@0.4.2:
-    resolution: {integrity: sha512-+NrLcmqYssx8DcbpcLBaYPqfTRtS+rkfbxMhLH8MHfTcTkdZfrkWQK7lsUvuPCebGEzfaPZJvHqBwhPrCXAmxg==}
-    peerDependencies:
-      solid-js: ^1.3.5
-
   solid-js@1.8.17:
     resolution: {integrity: sha512-E0FkUgv9sG/gEBWkHr/2XkBluHb1fkrHywUgA6o6XolPDCJ4g1HaLmQufcBBhiF36ee40q+HpG/vCZu7fLpI3Q==}
 
@@ -1208,6 +1214,9 @@ packages:
     resolution: {integrity: sha512-1FXk9E2Hm+QzZQ7z+McJiHL4NW1F2EzMu9Nq9i3zAaGqibafqYwCVU6WyWAuyQRRzOlxou8xZSyXLEN8oKj24g==}
     engines: {node: '>=4.2.0'}
     hasBin: true
+
+  undici-types@5.26.5:
+    resolution: {integrity: sha512-JlCMO+ehdEIKqlFxk6IfVoAUVmgz7cU7zD/h9XZ0qzeosSHmUJVOzSQvvYSYWXkFXC+IfLKSIffhv0sVZup6pA==}
 
   update-browserslist-db@1.0.16:
     resolution: {integrity: sha512-KVbTxlBYlckhF5wgfyZXTWnMn7MMZjMu9XG8bPlliUOP9ThaF4QnhP8qrjrH7DRzHfSk0oQv1wToW+iA5GajEQ==}
@@ -1638,6 +1647,10 @@ snapshots:
   '@rollup/rollup-win32-x64-msvc@4.18.0':
     optional: true
 
+  '@solidjs/router@0.13.3(solid-js@1.8.17)':
+    dependencies:
+      solid-js: 1.8.17
+
   '@teknologi-umum/eslint-config-base@0.0.11(eslint@8.57.0)':
     dependencies:
       eslint: 8.57.0
@@ -1672,6 +1685,10 @@ snapshots:
   '@types/estree@1.0.5': {}
 
   '@types/json-schema@7.0.15': {}
+
+  '@types/node@20.12.12':
+    dependencies:
+      undici-types: 5.26.5
 
   '@types/semver@7.5.8': {}
 
@@ -2387,10 +2404,6 @@ snapshots:
 
   slash@3.0.0: {}
 
-  solid-app-router@0.4.2(solid-js@1.8.17):
-    dependencies:
-      solid-js: 1.8.17
-
   solid-js@1.8.17:
     dependencies:
       csstype: 3.1.3
@@ -2457,6 +2470,8 @@ snapshots:
 
   typescript@4.9.5: {}
 
+  undici-types@5.26.5: {}
+
   update-browserslist-db@1.0.16(browserslist@4.23.0):
     dependencies:
       browserslist: 4.23.0
@@ -2469,7 +2484,7 @@ snapshots:
 
   validate-html-nesting@1.2.2: {}
 
-  vite-plugin-solid@2.10.2(solid-js@1.8.17)(vite@5.2.11):
+  vite-plugin-solid@2.10.2(solid-js@1.8.17)(vite@5.2.11(@types/node@20.12.12)):
     dependencies:
       '@babel/core': 7.24.6
       '@types/babel__core': 7.20.5
@@ -2477,22 +2492,23 @@ snapshots:
       merge-anything: 5.1.7
       solid-js: 1.8.17
       solid-refresh: 0.6.3(solid-js@1.8.17)
-      vite: 5.2.11
-      vitefu: 0.2.5(vite@5.2.11)
+      vite: 5.2.11(@types/node@20.12.12)
+      vitefu: 0.2.5(vite@5.2.11(@types/node@20.12.12))
     transitivePeerDependencies:
       - supports-color
 
-  vite@5.2.11:
+  vite@5.2.11(@types/node@20.12.12):
     dependencies:
       esbuild: 0.20.2
       postcss: 8.4.38
       rollup: 4.18.0
     optionalDependencies:
+      '@types/node': 20.12.12
       fsevents: 2.3.3
 
-  vitefu@0.2.5(vite@5.2.11):
+  vitefu@0.2.5(vite@5.2.11(@types/node@20.12.12)):
     optionalDependencies:
-      vite: 5.2.11
+      vite: 5.2.11(@types/node@20.12.12)
 
   vscode-json-languageservice@4.2.1:
     dependencies:

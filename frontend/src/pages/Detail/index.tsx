@@ -1,5 +1,5 @@
 import { fromEvent, map } from "rxjs";
-import { Link, Navigate, useSearchParams } from "solid-app-router";
+import { A, Navigate, useSearchParams } from "@solidjs/router";
 import { createResource, Match, onMount, Switch } from "solid-js";
 import DarkModeToggle from "@/components/DarkModeToggle";
 import EndpointOverviewCard from "@/components/EndpointOverviewCard";
@@ -44,9 +44,9 @@ export default function DetailPage() {
       <div class={styles.detail__header}>
         <div class={styles["detail__header-left"]}>
           <h1 class={styles.detail__title}>Status for {searchParams.name}</h1>
-          <Link href="/" class={styles.detail__back}>
+          <A href="/" class={styles.detail__back}>
             <LeftArrowIcon /> Back to Home
-          </Link>
+          </A>
         </div>
         <DarkModeToggle />
       </div>

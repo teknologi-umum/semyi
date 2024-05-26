@@ -15,6 +15,7 @@
   "license": "GPL-3.0",
   "devDependencies": {
     "@teknologi-umum/eslint-config-base": "^0.0.11",
+    "@types/node": "^20.12.12",
     "@typescript-eslint/eslint-plugin": "^5.62.0",
     "@typescript-eslint/parser": "^5.62.0",
     "eslint": "^8.57.0",
@@ -27,8 +28,8 @@
   "dependencies": {
     "@fontsource/ibm-plex-sans": "^5.0.20",
     "@fontsource/libre-franklin": "^5.0.18",
+    "@solidjs/router": "^0.13.3",
     "rxjs": "^7.8.1",
-    "solid-app-router": "^0.4.2",
     "solid-js": "^1.8.17"
   }
 }
