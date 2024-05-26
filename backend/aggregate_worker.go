@@ -50,11 +50,19 @@ func (w *AggregateWorker) RunHourlyAggregate() {
 				totalStatus += int64(data.Status)
 			}
 
-			var _ = totalLatency / int64(len(lastHourData))               // averageLatency
-			var _ = MonitorStatus(totalStatus / int64(len(lastHourData))) // averageStatus
+			var averageLatency = totalLatency / int64(len(lastHourData))
+			var averageStatus = MonitorStatus(totalStatus / int64(len(lastHourData)))
 
-			// TODO: Write the hourly aggregate data
-			// Need https://github.com/teknologi-umum/semyi/pull/32 to be merged first
+			err = w.writer.WriteHourly(context.TODO(), MonitorHistorical{
+				MonitorID: monitorId,
+				Status:    averageStatus,
+				Latency:   averageLatency,
+				Timestamp: fromTime,
+			})
+			if err != nil {
+				log.Error().Err(err).Msg("failed to write hourly aggregate data")
+				continue
+			}
 		}
 
 		// Calculate the time that we allowed to sleep. We should wake up 10 minutes after the `startTime`
@@ -95,11 +103,19 @@ func (w *AggregateWorker) RunDailyAggregate() {
 				totalStatus += int64(data.Status)
 			}
 
-			var _ = totalLatency / int64(len(lastHourData))               // averageLatency
-			var _ = MonitorStatus(totalStatus / int64(len(lastHourData))) // averageStatus
+			var averageLatency = totalLatency / int64(len(lastHourData))
+			var averageStatus = MonitorStatus(totalStatus / int64(len(lastHourData)))
 
-			// TODO: Write the daily aggregate data
-			// Need https://github.com/teknologi-umum/semyi/pull/32 to be merged first
+			err = w.writer.WriteDaily(context.TODO(), MonitorHistorical{
+				MonitorID: monitorId,
+				Status:    averageStatus,
+				Latency:   averageLatency,
+				Timestamp: fromTime,
+			})
+			if err != nil {
+				log.Error().Err(err).Msg("failed to write daily aggregate data")
+				continue
+			}
 		}
 
 		// Calculate the time that we allowed to sleep. We should wake up 1 hour after the `startTime`
