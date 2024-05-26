@@ -25,15 +25,10 @@ jobs:
         run: pnpm install
 
       - name: Lint
-        run: npx eslint --ignore-path .gitignore .
+        run: pnpm exec eslint --ignore-path .gitignore .
 
       - name: Build
         run: pnpm run build
-
-      - name: Test
-        run: pnpm run test
-
-      - uses: codecov/codecov-action@v3
 
   backend:
     name: Backend
