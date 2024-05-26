@@ -6,7 +6,7 @@ import "@fontsource/ibm-plex-sans/700.css";
 import "@fontsource/libre-franklin/400.css";
 import OverviewPage from "@/pages/Overview";
 import DetailPage from "@/pages/Detail";
-import {Route, Router} from "@solidjs/router";
+import { Route, Router } from "@solidjs/router";
 
 render(
   () => (

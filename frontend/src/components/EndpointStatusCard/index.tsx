@@ -3,7 +3,7 @@ import { createSignal, onMount } from "solid-js";
 import Status from "@/components/Status";
 import type { Response } from "@/types";
 import styles from "./styles.module.css";
-import {A} from "@solidjs/router";
+import { A } from "@solidjs/router";
 
 interface EndpointStatusCardProps {
   name: string;
@@ -43,7 +43,7 @@ export default function EndpointStatusCard(props: EndpointStatusCardProps) {
           {props.url}
         </a>
       </div>
-      <Status snapshots={snapshot()}></Status>
+      <Status snapshots={snapshot()} />
     </div>
   );
 }

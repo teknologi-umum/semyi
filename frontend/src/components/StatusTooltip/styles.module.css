@@ -12,7 +12,9 @@
   width: 14rem;
   white-space: nowrap;
   box-shadow: 0 0.25rem 1.25rem rgba(0, 0, 0, 0.25);
-  transition: opacity 0.1s ease-out, transform 0.1s ease-out;
+  transition:
+    opacity 0.1s ease-out,
+    transform 0.1s ease-out;
 }
 
 .tooltip::before {

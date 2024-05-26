@@ -7,8 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "serve": "vite preview",
-    "lint:check": "eslint --ignore-path .gitignore .",
-    "lint": "eslint --ignore-path .gitignore .",
+    "lint:check": "eslint --ignore-path .gitignore --ext .ts,.tsx .",
+    "lint": "eslint --fix --ignore-path .gitignore --ext .ts,.tsx .",
     "format": "prettier --write --ignore-path .gitignore .",
     "test": "exit 0"
   },
