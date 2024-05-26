@@ -1,17 +1,32 @@
 {
-  "endpoints": [
+  "monitors": [
     {
+        "unique_id": "1",
         "name": "Digital Ocean",
-        "url": "https://status.digitalocean.com/",
         "description": "The place where the whale stands",
-        "timeout": 60,
-        "interval": 10
+        "public_url": "https://digitalocean.com/",
+        "type": "http",
+        "http_endpoint": "https://status.digitalocean.com/",
+        "timeout": 20,
+        "interval": 30
     },
     {
+        "unique_id": "2",
         "name": "Github",
-        "url": "https://github.com/healthz",
         "description": "Github API",
-        "method": "GET"
+        "type": "http",
+        "http_method": "GET",
+        "http_endpoint": "https://github.com/healthz",
+        "interval": 60,
+        "timeout": 10
+    },
+    {
+        "unique_id": "3",
+        "name": "Cloudflare DNS",
+        "description": "Cloudflare DNS",
+        "type": "ping",
+        "hostname": "1.1.1.1",
+        "interval": 30
     }
   ],
   "webhook": {

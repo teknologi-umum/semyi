@@ -1,9 +1,9 @@
 import { map, Observable, take } from "rxjs";
-import { Link } from "solid-app-router";
 import { createSignal, onMount } from "solid-js";
 import Status from "@/components/Status";
 import type { Response } from "@/types";
 import styles from "./styles.module.css";
+import { A } from "@solidjs/router";
 
 interface EndpointStatusCardProps {
   name: string;
@@ -33,17 +33,17 @@ export default function EndpointStatusCard(props: EndpointStatusCardProps) {
   return (
     <div class={styles["endpoint-card"]}>
       <div class={styles["endpoint-card__header"]}>
-        <Link
+        <A
           class={styles["endpoint-card__title"]}
           href={"/by?name=" + encodeURIComponent(props.name)}
         >
           {props.name}
-        </Link>
+        </A>
         <a class={styles["endpoint-card__url"]} href={props.url}>
           {props.url}
         </a>
       </div>
-      <Status snapshots={snapshot()}></Status>
+      <Status snapshots={snapshot()} />
     </div>
   );
 }
