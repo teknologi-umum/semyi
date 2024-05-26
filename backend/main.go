@@ -126,8 +126,10 @@ func main() {
 		}(worker)
 	}
 
-	// TODO: Create a new worker that process monitor_historical data and create monitor_historical_hourly_aggregate from it
-	// TODO: Create a new worker that process monitor_historical data and create monitor_historical_daily_aggregate from it
+	aggregateWorker := NewAggregateWorker(monitorIds, nil, nil) // TODO: Add the reader and writer
+
+	go aggregateWorker.RunDailyAggregate()
+	go aggregateWorker.RunHourlyAggregate()
 
 	// TODO: Complete the ServerConfig
 	server := NewServer(ServerConfig{
