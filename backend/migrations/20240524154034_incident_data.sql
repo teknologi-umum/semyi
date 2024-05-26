@@ -1,6 +1,6 @@
 -- +goose Up
 -- +goose StatementBegin
-CREATE TABLE incident_data (
+CREATE TABLE IF NOT EXISTS incident_data (
     monitor_id VARCHAR(255) NOT NULL,
     title VARCHAR(255) NOT NULL,
     description TEXT NOT NULL,
@@ -11,10 +11,10 @@ CREATE TABLE incident_data (
     created_by VARCHAR(255) NOT NULL
 );
 
-CREATE INDEX incident_data_incident_id_idx ON incident_data (monitor_id, timestamp, title);
+CREATE INDEX IF NOT EXISTS incident_data_incident_id_idx ON incident_data (monitor_id, timestamp, title);
 -- +goose StatementEnd
 
 -- +goose Down
 -- +goose StatementBegin
-DROP TABLE incident_data;
+DROP TABLE IF EXISTS incident_data;
 -- +goose StatementEnd
