@@ -11,7 +11,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/allegro/bigcache/v3"
 	_ "github.com/marcboeker/go-duckdb"
 	"github.com/rs/zerolog/log"
 )
@@ -95,12 +94,6 @@ func main() {
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to migrate database")
 	}
-
-	cache, err := bigcache.NewBigCache(bigcache.DefaultConfig(time.Hour * 24))
-	if err != nil {
-		log.Fatal().Err(err).Msg("failed to create cache")
-	}
-	defer cache.Close()
 
 	processor := &Processor{}
 
