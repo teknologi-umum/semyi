@@ -58,6 +58,16 @@ func main() {
 		log.Warn().Msg("API_KEY is not set")
 	}
 
+	telegramChatID, ok := os.LookupEnv("TELEGRAM_CHAT_ID")
+	if !ok {
+		log.Warn().Msg("TELEGRAM_CHAT_ID is not set")
+	}
+
+	telegramUrl, ok := os.LookupEnv("TELEGRAM_URL is not set")
+	if !ok {
+		log.Warn().Msg("TELEGRAM_URL is not set")
+	}
+
 	if os.Getenv("ENV") == "" {
 		err := os.Setenv("ENV", "development")
 		if err != nil {
@@ -100,7 +110,12 @@ func main() {
 		log.Fatal().Err(err).Msg("failed to migrate database")
 	}
 
-	processor := &Processor{}
+	processor := &Processor{
+		telegramAlertProvider: NewTelegramAlertProvider(TelegramProviderConfig{
+			Url:    telegramUrl,
+			ChatID: telegramChatID,
+		}),
+	}
 
 	// Create a new worker
 	for _, monitor := range config.Monitors {

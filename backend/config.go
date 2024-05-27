@@ -25,6 +25,14 @@ const (
 	MonitorTypePing MonitorType = "ping"
 )
 
+type AlertProviderType string
+
+const (
+	AlertProviderTypeUnspecified AlertProviderType = ""
+	AlertProviderTypeTelegram    AlertProviderType = "telegram"
+	AlertProviderTypeDiscord     AlertProviderType = "discord"
+)
+
 type Monitor struct {
 	// UniqueID specifies unique identifier for each monitor. In any case of the monitor configuration value get
 	// changed (name, description, public monitorIds, etc), if users want to keep the data intact, they should keep the
@@ -61,6 +69,10 @@ type Monitor struct {
 	// IcmpPacketSize specifies the packet size that will be used for the ICMP request. It must be greater than zero.
 	// The default packet size is 56 bytes.
 	IcmpPacketSize int `json:"packet_size" yaml:"packet_size" toml:"packet_size"`
+	// AlertProvider specifies the type of alert provider that will be used to send alerts. It can be a string value such as
+	// "telegram" or "discord".
+	// THe default alert provider is "telegram"
+	AlertProvider AlertProviderType `json:"alert_provider" yam:"alert_provider" toml:"alert_provider"`
 }
 
 func (m Monitor) MarshalJSON() ([]byte, error) {
