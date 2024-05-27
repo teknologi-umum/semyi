@@ -1,6 +1,7 @@
 package main_test
 
 import (
+	"errors"
 	main "semyi"
 	"testing"
 	"time"
@@ -30,6 +31,11 @@ func TestIncidentValidate(t *testing.T) {
 				if err == nil {
 					t.Error("expect error, got nil")
 				}
+
+				var expectError *main.ValidationError
+				if !errors.As(err, &expectError) {
+					t.Errorf("expect error: %T, but got : %T", expectError, err)
+				}
 			}
 		})
 		t.Run("severity", func(t *testing.T) {
@@ -43,6 +49,11 @@ func TestIncidentValidate(t *testing.T) {
 				if err == nil {
 					t.Error("expect error, got nil")
 				}
+
+				var expectError *main.ValidationError
+				if !errors.As(err, &expectError) {
+					t.Errorf("expect error: %T, but got : %T", expectError, err)
+				}
 			}
 		})
 		t.Run("status", func(t *testing.T) {
@@ -55,6 +66,11 @@ func TestIncidentValidate(t *testing.T) {
 				err := validPayloadCopy.Validate()
 				if err == nil {
 					t.Error("expect error, got nil")
+				}
+
+				var expectError *main.ValidationError
+				if !errors.As(err, &expectError) {
+					t.Errorf("expect error: %T, but got : %T", expectError, err)
 				}
 			}
 		})
