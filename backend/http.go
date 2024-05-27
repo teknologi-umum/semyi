@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net"
 	"net/http"
 	"slices"
@@ -12,13 +11,17 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/rs/cors"
+	"github.com/rs/zerolog/log"
 	"github.com/unrolled/secure"
 )
 
 type Server struct {
 	historicalReader *MonitorHistoricalReader
 	centralBroker    *Broker[MonitorHistorical]
+	incidentWriter   *IncidentWriter
 	monitors         []Monitor
+
+	apiKey string
 }
 
 type ServerConfig struct {
@@ -29,7 +32,10 @@ type ServerConfig struct {
 	StaticPath              string
 	MonitorHistoricalReader *MonitorHistoricalReader
 	CentralBroker           *Broker[MonitorHistorical]
+	IncidentWriter          *IncidentWriter
 	MonitorList             []Monitor
+
+	ApiKey string
 }
 
 func NewServer(config ServerConfig) *http.Server {
@@ -37,6 +43,9 @@ func NewServer(config ServerConfig) *http.Server {
 		historicalReader: config.MonitorHistoricalReader,
 		centralBroker:    config.CentralBroker,
 		monitors:         config.MonitorList,
+		incidentWriter:   config.IncidentWriter,
+
+		apiKey: config.ApiKey,
 	}
 
 	secureMiddleware := secure.New(secure.Options{
@@ -58,10 +67,11 @@ func NewServer(config ServerConfig) *http.Server {
 	api.Get("/api/overview", server.snapshotOverview)
 	api.Get("/api/by", server.snapshotBy)
 	api.Get("/api/static", server.staticSnapshot)
+	api.Post("/api/incident", server.submitIncindent)
 
 	r := chi.NewRouter()
 	r.Use(secureMiddleware.Handler)
-	r.Handle("/api/", corsMiddleware.Handler(api))
+	r.Handle("/api/*", corsMiddleware.Handler(api))
 	r.Handle("/", http.FileServer(http.Dir(config.StaticPath)))
 
 	return &http.Server{
@@ -112,7 +122,6 @@ func (s *Server) snapshotOverview(w http.ResponseWriter, r *http.Request) {
 			time.Sleep(time.Millisecond * 10)
 		}
 	}
-
 }
 
 func (s *Server) snapshotBy(w http.ResponseWriter, r *http.Request) {
@@ -181,7 +190,6 @@ func (s *Server) snapshotBy(w http.ResponseWriter, r *http.Request) {
 			time.Sleep(time.Millisecond * 10)
 		}
 	}
-
 }
 
 func (s *Server) staticSnapshot(w http.ResponseWriter, r *http.Request) {
@@ -274,4 +282,74 @@ func (s *Server) staticSnapshot(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(data)
+}
+
+func (s *Server) submitIncindent(w http.ResponseWriter, r *http.Request) {
+	apiKey := r.Header.Get("x-api-key")
+	if apiKey == "" {
+		w.WriteHeader(http.StatusUnauthorized)
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{"error": "api key is required"}`))
+		return
+	} else {
+		if apiKey != s.apiKey {
+			w.WriteHeader(http.StatusUnauthorized)
+			w.Header().Set("Content-Type", "application/json")
+			w.Write([]byte(`{"error": "api key is invalid"}`))
+			return
+		}
+	}
+
+	decoder := json.NewDecoder(r.Body)
+	var body Incident
+	if err := decoder.Decode(&body); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Header().Set("Content-Type", "application/json")
+		errBytes, marshalErr := json.Marshal(map[string]string{
+			"error": err.Error(),
+		})
+		if marshalErr != nil {
+			log.Error().Stack().Err(err).Msg("failed to marshal json")
+			w.Write([]byte(`{"error": "internal server error"}`))
+			return
+		}
+		w.Write(errBytes)
+		return
+	}
+	defer r.Body.Close()
+
+	if err := body.Validate(); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Header().Set("Content-Type", "application/json")
+		errBytes, marshalErr := json.Marshal(map[string]string{
+			"error": err.Error(),
+		})
+		if marshalErr != nil {
+			log.Error().Stack().Err(err).Msg("failed to marshal json")
+			w.Write([]byte(`{"error": "internal server error"}`))
+			return
+		}
+		w.Write(errBytes)
+		return
+	}
+
+	err := s.incidentWriter.Write(r.Context(), body)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Header().Set("Content-Type", "application/json")
+		errBytes, err := json.Marshal(map[string]string{
+			"error": err.Error(),
+		})
+		if err != nil {
+			log.Error().Stack().Err(err).Msg("failed to marshal json")
+			w.Write([]byte(`{"error": "internal server error"}`))
+			return
+		}
+		w.Write(errBytes)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+	w.Write([]byte(`{"message": "success"}`))
 }

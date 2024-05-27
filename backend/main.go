@@ -53,6 +53,11 @@ func main() {
 		port = "5000"
 	}
 
+	apiKey, ok := os.LookupEnv("API_KEY")
+	if !ok {
+		log.Warn().Msg("API_KEY is not set")
+	}
+
 	if os.Getenv("ENV") == "" {
 		err := os.Setenv("ENV", "development")
 		if err != nil {
@@ -132,6 +137,9 @@ func main() {
 		Port:                    port,
 		StaticPath:              staticPath,
 		MonitorHistoricalReader: NewMonitorHistoricalReader(db),
+		IncidentWriter:          NewIncidentWriter(db),
+
+		ApiKey: apiKey,
 	})
 	go func() {
 		// Listen for SIGKILL and SIGTERM
