@@ -55,7 +55,7 @@ func main() {
 
 	apiKey, ok := os.LookupEnv("API_KEY")
 	if !ok {
-		log.Fatal().Msg("API_KEY is required")
+		log.Warn().Msg("API_KEY is not set")
 	}
 
 	if os.Getenv("ENV") == "" {
