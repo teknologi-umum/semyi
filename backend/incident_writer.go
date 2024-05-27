@@ -28,13 +28,18 @@ func (w *IncidentWriter) Write(ctx context.Context, incident Incident) error {
 		return fmt.Errorf("failed to parse timestamp: %w", err)
 	}
 
+	incidentStatus := incident.Status
+	if timestamp.After(time.Now()) {
+		incidentStatus = IncidentStatusScheduled
+	}
+
 	_, err = conn.ExecContext(ctx, "INSERT INTO incident_data (monitor_id, title, description, timestamp, severity, status, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)",
 		incident.MonitorID,
 		incident.Title,
 		incident.Description,
 		timestamp,
 		incident.Severity,
-		incident.Status,
+		incidentStatus,
 		incident.CreatedBy,
 	)
 	if err != nil {
