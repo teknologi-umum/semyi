@@ -23,13 +23,8 @@ func (w *IncidentWriter) Write(ctx context.Context, incident Incident) error {
 		return fmt.Errorf("failed to get database connection: %w", err)
 	}
 
-	timestamp, err := time.Parse(time.RFC3339, incident.Timestamp)
-	if err != nil {
-		return fmt.Errorf("failed to parse timestamp: %w", err)
-	}
-
 	incidentStatus := incident.Status
-	if timestamp.After(time.Now()) {
+	if incident.Timestamp.After(time.Now()) {
 		incidentStatus = IncidentStatusScheduled
 	}
 
@@ -37,7 +32,7 @@ func (w *IncidentWriter) Write(ctx context.Context, incident Incident) error {
 		incident.MonitorID,
 		incident.Title,
 		incident.Description,
-		timestamp,
+		incident.Timestamp,
 		incident.Severity,
 		incidentStatus,
 		incident.CreatedBy,

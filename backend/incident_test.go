@@ -3,6 +3,7 @@ package main_test
 import (
 	main "semyi"
 	"testing"
+	"time"
 )
 
 func TestIncidentValidate(t *testing.T) {
@@ -10,7 +11,7 @@ func TestIncidentValidate(t *testing.T) {
 		MonitorID:   "a84c2c59-748c-48d0-b628-4a73b1c3a8d7",
 		Title:       "test",
 		Description: "description test",
-		Timestamp:   "2024-05-26T15:04:05+07:00",
+		Timestamp:   time.Date(2000, 7, 24, 4, 30, 15, 0, time.UTC),
 		Severity:    main.IncidentSeverityError,
 		Status:      main.IncidentStatusInvestigating,
 	}
@@ -18,12 +19,8 @@ func TestIncidentValidate(t *testing.T) {
 	t.Run("Should return error if payload is invalid", func(t *testing.T) {
 		t.Run("Timestamp", func(t *testing.T) {
 			validPayloadCopy := validPayload
-			mockTimestamps := []string{
-				"2024-05-26T15:04:05",
-				"2024-05-26",
-				"15:04:05",
-				"arbitary",
-				"2024-05-26 15:04:05",
+			mockTimestamps := []time.Time{
+				time.Date(1, 1, 1, 0, 0, 0, 0, time.UTC),
 			}
 
 			for _, timestamp := range mockTimestamps {
