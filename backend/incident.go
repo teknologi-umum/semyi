@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"time"
 )
 
@@ -44,24 +43,29 @@ type Incident struct {
 	MonitorID   string           `json:"monitor_id"`
 	Title       string           `json:"title"`
 	Description string           `json:"description"`
-	Timestamp   string           `json:"timestamp"`
+	Timestamp   time.Time        `json:"timestamp"`
 	Severity    IncidentSeverity `json:"severity"`
 	Status      IncidentStatus   `json:"status"`
 	CreatedBy   string           `json:"created_by"`
 }
 
 func (i Incident) Validate() error {
-	_, err := time.Parse(time.RFC3339, i.Timestamp)
-	if err != nil {
-		return err
+	err := NewValidationError()
+
+	if i.Timestamp.IsZero() {
+		err.AddIssue("timestamp", "shouldn't be zero")
 	}
 
 	if !i.Severity.IsValid() {
-		return fmt.Errorf("invalid incident severity")
+		err.AddIssue("severity", "invalid")
 	}
 
 	if !i.Status.IsValid() {
-		return fmt.Errorf("invalid incident status")
+		err.AddIssue("status", "invalid")
+	}
+
+	if err.HasIssues() {
+		return err
 	}
 
 	return nil
