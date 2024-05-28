@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"time"
 
 	"github.com/rs/zerolog/log"
 )
@@ -23,16 +24,30 @@ func (m *Processor) ProcessResponse(response Response) {
 		uniqueId = uniqueId[:255]
 	}
 
-	// TODO: Retry write if it fails
-	// Write the response to the historical writer
-	err := m.historicalWriter.Write(context.Background(), MonitorHistorical{
-		MonitorID: uniqueId,
-		Status:    status,
-		Latency:   response.RequestDuration,
-		Timestamp: response.Timestamp,
-	})
-	if err != nil {
-		log.Error().Err(err).Msg("failed to write historical data")
+	maxAttemps := 3
+	attempts := 0
+	for {
+		attempts++
+		err := m.historicalWriter.Write(context.Background(), MonitorHistorical{
+			MonitorID: uniqueId,
+			Status:    status,
+			Latency:   response.RequestDuration,
+			Timestamp: response.Timestamp,
+		})
+		if err != nil {
+			if attempts >= maxAttemps {
+				log.Error().Err(err).Msgf("failed to write historical data. Attempt %d failed\n", attempts)
+				return
+			}
+
+			delay := time.Duration(attempts*2) * time.Second
+			log.Error().Err(err).Msgf("failed to write historical data. Attempt %d failed. Retrying in %v...\n", attempts, delay)
+
+			time.Sleep(delay)
+			continue
+		}
+
+		break
 	}
 
 	// TODO: If the current status is different from the last status, send an alert notification
