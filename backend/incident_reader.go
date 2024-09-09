@@ -29,7 +29,7 @@ func (r *IncidentDataReader) ReadRelatedIncidents(ctx context.Context, incidentT
 		}
 	}()
 
-	rows, err := dbCon.QueryContext(ctx, "SELECT monitor_id, title, description, timestamp, severity, status FROM incident_data WHERE monitor_id = ? AND title = ? ORDER BY created_by DESC", monitorID, incidentTitle)
+	rows, err := dbCon.QueryContext(ctx, "SELECT monitor_id, title, description, timestamp, severity, status FROM incident_data WHERE monitor_id = ? AND title = ? ORDER BY created_at DESC", monitorID, incidentTitle)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read related incidents: %w", err)
 	}
