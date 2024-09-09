@@ -9,6 +9,9 @@ import (
 type Processor struct {
 	historicalWriter *MonitorHistoricalWriter
 	historicalReader *MonitorHistoricalReader
+
+	telegramAlertProvider Alerter
+	discordAlertProvider  Alerter
 }
 
 func (m *Processor) ProcessResponse(response Response) {
@@ -35,5 +38,42 @@ func (m *Processor) ProcessResponse(response Response) {
 		log.Error().Err(err).Msg("failed to write historical data")
 	}
 
-	// TODO: If the current status is different from the last status, send an alert notification
+	go func() {
+		if m.telegramAlertProvider == nil && m.discordAlertProvider == nil {
+			log.Warn().Msg("no alert providers are set")
+			return
+		}
+
+		alertMessage := AlertMessage{
+			Success:     response.Success,
+			MonitorID:   uniqueId,
+			MonitorName: response.Monitor.Name,
+			StatusCode:  response.StatusCode,
+			Timestamp:   response.Timestamp,
+			Latency:     response.RequestDuration,
+		}
+
+		lastRawHistorical, err := m.historicalReader.ReadRawLatest(context.Background(), uniqueId)
+		if err != nil {
+			log.Error().Err(err).Msg("failed to get raw latest historical data")
+			return
+		}
+
+		if lastRawHistorical.Status != status {
+			switch response.Monitor.AlertProvider {
+			case AlertProviderTypeTelegram, AlertProviderTypeUnspecified:
+				if m.telegramAlertProvider == nil {
+					log.Warn().Msg("telegram alert provider is not set")
+					return
+				}
+
+				err := m.telegramAlertProvider.Send(context.Background(), alertMessage)
+				if err != nil {
+					log.Error().Err(err).Msg("failed to send alert")
+				}
+			case AlertProviderTypeDiscord:
+				panic("TODO: Implement me!")
+			}
+		}
+	}()
 }
