@@ -28,6 +28,16 @@ func main() {
 		configPath = "../config.json"
 	}
 
+	environment, ok := os.LookupEnv("ENVIRONMENT")
+	if !ok {
+		environment = "development"
+	}
+
+	hostname, ok := os.LookupEnv("HOSTNAME")
+	if !ok {
+		hostname = "0.0.0.0"
+	}
+
 	dbPath, ok := os.LookupEnv("DB_PATH")
 	if !ok {
 		dbPath = "../db.duckdb"
@@ -139,20 +149,21 @@ func main() {
 		}(worker)
 	}
 
-	aggregateWorker := NewAggregateWorker(monitorIds, nil, nil) // TODO: Add the reader and writer
+	aggregateWorker := NewAggregateWorker(monitorIds, NewMonitorHistoricalReader(db), NewMonitorHistoricalWriter(db))
 
 	go aggregateWorker.RunDailyAggregate()
 	go aggregateWorker.RunHourlyAggregate()
 
-	// TODO: Complete the ServerConfig
 	server := NewServer(ServerConfig{
 		SSLRedirect:             false,
-		Environment:             "",
-		Hostname:                "",
+		Environment:             environment,
+		Hostname:                hostname,
 		Port:                    port,
 		StaticPath:              staticPath,
 		MonitorHistoricalReader: NewMonitorHistoricalReader(db),
+		CentralBroker:           &Broker[MonitorHistorical]{},
 		IncidentWriter:          NewIncidentWriter(db),
+		MonitorList:             config.Monitors,
 
 		ApiKey: apiKey,
 	})
