@@ -28,9 +28,14 @@ func main() {
 		configPath = "../config.json"
 	}
 
+	// possible options: development, production
 	environment, ok := os.LookupEnv("ENVIRONMENT")
 	if !ok {
 		environment = "development"
+	} else {
+		if environment != "development" && environment != "production" {
+			log.Fatal().Msg("Invalid environment. Possible options: development, production")
+		}
 	}
 
 	hostname, ok := os.LookupEnv("HOSTNAME")
