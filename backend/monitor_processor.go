@@ -93,5 +93,7 @@ func (m *Processor) ProcessResponse(response Response) {
 				panic("TODO: Implement me!")
 			}
 		}
+
+		// TODO: incident writer
 	}()
 }

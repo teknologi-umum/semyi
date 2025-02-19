@@ -42,6 +42,10 @@ func (w *AggregateWorker) RunHourlyAggregate() {
 				}
 			}
 
+			if (len(lastHourData) == 0) {
+				continue
+			}
+
 			// Calculate the average latency and status
 			var totalLatency int64
 			var totalStatus int64
@@ -93,6 +97,10 @@ func (w *AggregateWorker) RunDailyAggregate() {
 				if data.Timestamp.Equal(fromTime) || (data.Timestamp.After(fromTime) && data.Timestamp.Before(toTime)) {
 					lastHourData = append(lastHourData, data)
 				}
+			}
+
+			if (len(lastHourData) == 0) {
+				continue
 			}
 
 			// Calculate the average latency and status
