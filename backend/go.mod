@@ -9,7 +9,6 @@ require (
 	github.com/ClickHouse/clickhouse-go/v2 v2.34.0
 	github.com/go-chi/chi/v5 v5.0.12
 	github.com/google/uuid v1.6.0
-	github.com/marcboeker/go-duckdb v1.6.6-0.20240523191231-e1139f74c461
 	github.com/marcboeker/go-duckdb/v2 v2.1.0
 	github.com/prometheus-community/pro-bing v0.4.0
 	github.com/rs/cors v1.8.2
@@ -22,7 +21,6 @@ require (
 	github.com/ClickHouse/ch-go v0.65.1 // indirect
 	github.com/andybalholm/brotli v1.1.1 // indirect
 	github.com/apache/arrow-go/v18 v18.1.0 // indirect
-	github.com/apache/arrow/go/v14 v14.0.2 // indirect
 	github.com/duckdb/duckdb-go-bindings v0.1.13 // indirect
 	github.com/duckdb/duckdb-go-bindings/darwin-amd64 v0.1.8 // indirect
 	github.com/duckdb/duckdb-go-bindings/darwin-arm64 v0.1.8 // indirect
@@ -40,9 +38,9 @@ require (
 	github.com/marcboeker/go-duckdb/mapping v0.0.6 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
-	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/paulmach/orb v0.11.1 // indirect
 	github.com/pierrec/lz4/v4 v4.1.22 // indirect
+	github.com/rogpeppe/go-internal v1.9.0 // indirect
 	github.com/segmentio/asm v1.2.0 // indirect
 	github.com/shopspring/decimal v1.4.0 // indirect
 	github.com/zeebo/xxh3 v1.0.2 // indirect
