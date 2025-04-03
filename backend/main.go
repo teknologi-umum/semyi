@@ -154,7 +154,10 @@ func main() {
 		}(worker)
 	}
 
-	aggregateWorker := NewAggregateWorker(monitorIds, NewMonitorHistoricalReader(db), NewMonitorHistoricalWriter(db))
+	monitorHistoricalReader := NewMonitorHistoricalReader(db)
+	monitorHistoricalWriter := NewMonitorHistoricalWriter(db)
+
+	aggregateWorker := NewAggregateWorker(monitorIds, monitorHistoricalReader, monitorHistoricalWriter)
 
 	go aggregateWorker.RunDailyAggregate()
 	go aggregateWorker.RunHourlyAggregate()
@@ -165,7 +168,8 @@ func main() {
 		Hostname:                hostname,
 		Port:                    port,
 		StaticPath:              staticPath,
-		MonitorHistoricalReader: NewMonitorHistoricalReader(db),
+		MonitorHistoricalReader: monitorHistoricalReader,
+		MonitorHistoricalWriter: monitorHistoricalWriter,
 		CentralBroker:           &Broker[MonitorHistorical]{},
 		IncidentWriter:          NewIncidentWriter(db),
 		MonitorList:             config.Monitors,

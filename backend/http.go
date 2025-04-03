@@ -6,6 +6,7 @@ import (
 	"net"
 	"net/http"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 
@@ -16,6 +17,7 @@ import (
 )
 
 type Server struct {
+	historicalWriter *MonitorHistoricalWriter
 	historicalReader *MonitorHistoricalReader
 	centralBroker    *Broker[MonitorHistorical]
 	incidentWriter   *IncidentWriter
@@ -31,6 +33,7 @@ type ServerConfig struct {
 	Port                    string
 	StaticPath              string
 	MonitorHistoricalReader *MonitorHistoricalReader
+	MonitorHistoricalWriter *MonitorHistoricalWriter
 	CentralBroker           *Broker[MonitorHistorical]
 	IncidentWriter          *IncidentWriter
 	MonitorList             []Monitor
@@ -41,6 +44,7 @@ type ServerConfig struct {
 func NewServer(config ServerConfig) *http.Server {
 	server := &Server{
 		historicalReader: config.MonitorHistoricalReader,
+		historicalWriter: config.MonitorHistoricalWriter,
 		centralBroker:    config.CentralBroker,
 		monitors:         config.MonitorList,
 		incidentWriter:   config.IncidentWriter,
@@ -58,7 +62,7 @@ func NewServer(config ServerConfig) *http.Server {
 	corsMiddleware := cors.New(cors.Options{
 		Debug:          config.Environment == "development",
 		AllowedOrigins: []string{"*"},
-		AllowedMethods: []string{"GET", "OPTIONS"},
+		AllowedMethods: []string{"GET", "POST", "OPTIONS"},
 		AllowedHeaders: []string{"Content-Type"},
 	})
 
@@ -68,6 +72,7 @@ func NewServer(config ServerConfig) *http.Server {
 	api.Get("/api/by", server.snapshotBy)
 	api.Get("/api/static", server.staticSnapshot)
 	api.Post("/api/incident", server.submitIncindent)
+	api.Get("/api/push/{monitor_id}", server.pushHealthcheck)
 
 	r := chi.NewRouter()
 	r.Use(secureMiddleware.Handler)
@@ -352,4 +357,84 @@ func (s *Server) submitIncindent(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 	w.Write([]byte(`{"message": "success"}`))
+}
+
+func (s *Server) pushHealthcheck(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Get monitor ID from URL path
+	monitorID := chi.URLParam(r, "monitor_id")
+	if monitorID == "" {
+		http.Error(w, "monitor_id is required", http.StatusBadRequest)
+		return
+	}
+
+	// Trim monitorID
+	monitorID = strings.TrimSpace(monitorID)
+
+	// Validate monitor ID exists
+	if !slices.Contains(monitorIds, monitorID) {
+		http.Error(w, "Invalid monitor_id", http.StatusBadRequest)
+		return
+	}
+
+	// Get query parameters
+	status := r.URL.Query().Get("status")
+	pingStr := r.URL.Query().Get("ping")
+
+	// Convert ping to latency (in milliseconds)
+	var latency int64
+	if pingStr != "" {
+		ping, err := strconv.ParseFloat(pingStr, 64)
+		if err != nil {
+			http.Error(w, "Invalid ping value", http.StatusBadRequest)
+			return
+		}
+		latency = int64(ping * 1000) // Convert seconds to milliseconds
+	}
+
+	// Convert status string to MonitorStatus
+	var monitorStatus MonitorStatus
+	switch strings.ToLower(status) {
+	case "up":
+		monitorStatus = MonitorStatusSuccess
+	case "down":
+		monitorStatus = MonitorStatusFailure
+	default:
+		http.Error(w, "Invalid status value", http.StatusBadRequest)
+		return
+	}
+
+	// Create a new monitor historical record
+	historical := MonitorHistorical{
+		MonitorID: monitorID,
+		Status:    monitorStatus,
+		Latency:   latency,
+		Timestamp: time.Now().UTC(),
+	}
+
+	// Validate the historical record
+	if valid, err := historical.Validate(); !valid || err != nil {
+		http.Error(w, "Invalid healthcheck data", http.StatusBadRequest)
+		return
+	}
+
+	// Write to storage
+	if err := s.historicalWriter.Write(r.Context(), historical); err != nil {
+		log.Error().Err(err).Msg("Failed to write healthcheck result")
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	// Publish to broker for real-time updates
+	s.centralBroker.Publish(monitorID, &BrokerMessage[MonitorHistorical]{
+		Header: make(map[string]string),
+		Body:   historical,
+	})
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("OK"))
 }
