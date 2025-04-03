@@ -7,4 +7,14 @@ One rule that you need to adhere: Whenever you are unsure about a specific part,
 
 Refer to [project-milestone.md](mdc:.cursor/docs/project-milestone.md) for guarding on things to be done.
 
-Whenever possible, always put an in-code documentation of your decision that answers "Why a certain things are done this way?"
+Whenever possible, always put an in-code documentation of your decision that answers "Why a certain things are done this way?".
+
+If you need to create a commit, follow Angular's Conventional Commit: @https://www.conventionalcommits.org/en/v1.0.0-beta.4/, which has the style of:
+```
+<type>[optional scope]: <description>
+
+[optional body]
+
+[optional footer]
+```
+With `type` being one of `fix`, `feat`, `chore`, `docs`, `style`, `refactor`, `perf`, and `test`. For commit body, instead of putting `\n` on the body message, use multiple `-m` flags instead. Example: `git commit -m "docs(cursor): Enhance Cursor rules to respect conventional commit" -m "Previously, the commit message does not have a specific rule, and for each developer, they might have different settings on what kind of commit message they should do." -m "Through this change, every commit made by Cursor should follow Angular's Conventional Commit"`.
