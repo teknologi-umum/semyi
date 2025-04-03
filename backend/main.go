@@ -3,15 +3,18 @@ package main
 import (
 	"context"
 	"database/sql"
+	"database/sql/driver"
 	"errors"
 	"net/http"
 	"os"
 	"os/signal"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
-	_ "github.com/marcboeker/go-duckdb"
+	"github.com/ClickHouse/clickhouse-go/v2"
+	"github.com/marcboeker/go-duckdb/v2"
 	"github.com/rs/zerolog/log"
 )
 
@@ -106,10 +109,27 @@ func main() {
 		log.Fatal().Err(err).Msg("Failed to parse default interval")
 	}
 
-	db, err := sql.Open("duckdb", dbPath)
-	if err != nil {
-		log.Fatal().Err(err).Msg("failed to open database")
+	var connector driver.Connector
+	// If the dbPath has `clickhouse://` or `http://` prefix, we use clickhouse by parsing the DSN and using the clickhouse-go driver
+	// to create a new `database/sql` compatible connector. Otherwise, we use the duckdb driver by using the `dbPath` as is.
+	if strings.HasPrefix(dbPath, "clickhouse://") || strings.HasPrefix(dbPath, "http://") {
+		clickHouseOptions, err := clickhouse.ParseDSN(dbPath)
+		if err != nil {
+			log.Fatal().Err(err).Msg("failed to parse clickhouse DSN")
+		}
+
+		connector = clickhouse.Connector(clickHouseOptions)
+	} else {
+		connector, err = duckdb.NewConnector(dbPath, func(execer driver.ExecerContext) error {
+			return nil
+		})
+		if err != nil {
+			log.Fatal().Err(err).Msg("failed to create duckdb connector")
+		}
 	}
+	var db *sql.DB = sql.OpenDB(connector)
+	db.SetConnMaxLifetime(time.Hour)
+	db.SetConnMaxIdleTime(time.Minute * 30)
 	defer func(db *sql.DB) {
 		err := db.Close()
 		if err != nil {

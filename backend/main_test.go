@@ -8,7 +8,7 @@ import (
 
 	main "semyi"
 
-	_ "github.com/marcboeker/go-duckdb"
+	_ "github.com/marcboeker/go-duckdb/v2"
 	"github.com/rs/zerolog/log"
 )
 

@@ -23,8 +23,12 @@ func (w *IncidentWriter) Write(ctx context.Context, incident Incident) error {
 		return fmt.Errorf("failed to get database connection: %w", err)
 	}
 
+	// Ensure timestamps are in UTC
+	incident.Timestamp = EnsureUTC(incident.Timestamp)
+	now := EnsureUTC(time.Now())
+
 	incidentStatus := incident.Status
-	if incident.Timestamp.After(time.Now()) {
+	if incident.Timestamp.After(now) {
 		incidentStatus = IncidentStatusScheduled
 	}
 
