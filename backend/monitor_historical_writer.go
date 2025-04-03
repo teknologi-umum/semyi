@@ -34,6 +34,9 @@ func (w *MonitorHistoricalWriter) Write(ctx context.Context, historical MonitorH
 		return nil
 	}
 
+	// Ensure timestamp is in UTC
+	historical.Timestamp = EnsureUTC(historical.Timestamp)
+
 	// Insert the historical data into the database
 	conn, err := w.db.Conn(ctx)
 	if err != nil {
