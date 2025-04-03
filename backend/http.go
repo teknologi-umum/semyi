@@ -88,22 +88,17 @@ func NewServer(config ServerConfig) *http.Server {
 func (s *Server) snapshotOverview(w http.ResponseWriter, r *http.Request) {
 	flusher, ok := w.(http.Flusher)
 	if !ok {
-		w.WriteHeader(http.StatusPreconditionFailed)
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"error": "not flusher"}`))
+		w.WriteHeader(http.StatusPreconditionFailed)
+		_ = json.NewEncoder(w).Encode(HttpCommonError{Error: "not flusher"})
 		return
 	}
 
 	subscriber, err := NewSubscriber(s.centralBroker, monitorIds...)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
 		w.Header().Set("Content-Type", "application/json")
-		errBytes, err := json.Marshal(map[string]string{"error": fmt.Errorf("failed to subscribe to endpoints: %s", err).Error()})
-		if err != nil {
-			w.Write([]byte(`{"error": "internal server error"}`))
-			return
-		}
-		w.Write(errBytes)
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(HttpCommonError{Error: fmt.Sprintf("failed to subscribe to endpoints: %s", err)})
 		return
 	}
 
@@ -132,17 +127,17 @@ func (s *Server) snapshotOverview(w http.ResponseWriter, r *http.Request) {
 func (s *Server) snapshotBy(w http.ResponseWriter, r *http.Request) {
 	flusher, ok := w.(http.Flusher)
 	if !ok {
-		w.WriteHeader(http.StatusPreconditionFailed)
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"error": "not flusher"}`))
+		w.WriteHeader(http.StatusPreconditionFailed)
+		_ = json.NewEncoder(w).Encode(HttpCommonError{Error: "not flusher"})
 		return
 	}
 
 	ids := r.URL.Query().Get("ids")
 	if ids == "" {
-		w.WriteHeader(http.StatusBadRequest)
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"error":"ids is required"}`))
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(HttpCommonError{Error: "ids is required"})
 		return
 	}
 
@@ -152,7 +147,7 @@ func (s *Server) snapshotBy(w http.ResponseWriter, r *http.Request) {
 		if !slices.Contains(monitorIds, id) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte(`{"error": "id is not in the list of monitors"}`))
+			_ = json.NewEncoder(w).Encode(HttpCommonError{Error: "id is not in the list of monitors"})
 			return
 		}
 	}
@@ -164,14 +159,9 @@ func (s *Server) snapshotBy(w http.ResponseWriter, r *http.Request) {
 
 	sub, err := NewSubscriber(s.centralBroker, wantedMonitorIds...)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
 		w.Header().Set("Content-Type", "application/json")
-		errBytes, err := json.Marshal(map[string]string{"error": fmt.Errorf("failed to subscribe to endpoints: %s", err).Error()})
-		if err != nil {
-			w.Write([]byte(`{"error": "internal server error"}`))
-			return
-		}
-		w.Write(errBytes)
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(HttpCommonError{Error: fmt.Sprintf("failed to subscribe to endpoints: %s", err)})
 		return
 	}
 
@@ -200,9 +190,9 @@ func (s *Server) snapshotBy(w http.ResponseWriter, r *http.Request) {
 func (s *Server) staticSnapshot(w http.ResponseWriter, r *http.Request) {
 	monitorId := r.URL.Query().Get("id")
 	if monitorId == "" {
-		w.WriteHeader(http.StatusBadRequest)
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"error": "id is required"}`))
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(HttpCommonError{Error: "id is required"})
 		return
 	}
 
@@ -212,16 +202,16 @@ func (s *Server) staticSnapshot(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if interval != "hourly" && interval != "daily" && interval != "raw" {
-		w.WriteHeader(http.StatusBadRequest)
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"error": "interval must be hourly, daily, or raw"}`))
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(HttpCommonError{Error: "interval must be hourly, daily, or raw"})
 		return
 	}
 
 	if !slices.Contains(monitorIds, monitorId) {
-		w.WriteHeader(http.StatusBadRequest)
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"error": "id is not in the list of monitors"}`))
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(HttpCommonError{Error: "id is not in the list of monitors"})
 		return
 	}
 
@@ -232,32 +222,27 @@ func (s *Server) staticSnapshot(w http.ResponseWriter, r *http.Request) {
 	case "raw":
 		monitorHistorical, err = s.historicalReader.ReadRawHistorical(r.Context(), monitorId)
 		if err != nil {
-			// TODO: Handle error properly
+			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusInternalServerError)
+			_ = json.NewEncoder(w).Encode(HttpCommonError{Error: fmt.Sprintf("failed to read raw historical data: %s", err)})
 			return
 		}
-		break
 	case "hourly":
 		monitorHistorical, err = s.historicalReader.ReadHourlyHistorical(r.Context(), monitorId)
 		if err != nil {
-			// TODO: Handle error properly
+			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusInternalServerError)
+			_ = json.NewEncoder(w).Encode(HttpCommonError{Error: fmt.Sprintf("failed to read hourly historical data: %s", err)})
 			return
 		}
-		break
 	case "daily":
 		monitorHistorical, err = s.historicalReader.ReadDailyHistorical(r.Context(), monitorId)
 		if err != nil {
-			// TODO: Handle error properly
+			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusInternalServerError)
+			_ = json.NewEncoder(w).Encode(HttpCommonError{Error: fmt.Sprintf("failed to read daily historical data: %s", err)})
 			return
 		}
-		break
-	default:
-		w.WriteHeader(http.StatusBadRequest)
-		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"error": "interval must be hourly, daily, or raw"}`))
-		return
 	}
 
 	// Acquire monitor metadata
@@ -268,39 +253,26 @@ func (s *Server) staticSnapshot(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	data, err := json.Marshal(map[string]any{
-		"metadata":   monitor,
-		"historical": monitorHistorical,
-	})
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Header().Set("Content-Type", "application/json")
-		errBytes, err := json.Marshal(map[string]string{"error": err.Error()})
-		if err != nil {
-			w.Write([]byte(`{"error": "internal server error"}`))
-			return
-		}
-		w.Write(errBytes)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
-	w.Write(data)
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(StaticSnapshotResponse{
+		Metadata:   monitor,
+		Historical: monitorHistorical,
+	})
 }
 
 func (s *Server) submitIncindent(w http.ResponseWriter, r *http.Request) {
 	apiKey := r.Header.Get("x-api-key")
 	if apiKey == "" {
-		w.WriteHeader(http.StatusUnauthorized)
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"error": "api key is required"}`))
+		w.WriteHeader(http.StatusUnauthorized)
+		_ = json.NewEncoder(w).Encode(HttpCommonError{Error: "api key is required"})
 		return
 	} else {
 		if apiKey != s.apiKey {
-			w.WriteHeader(http.StatusUnauthorized)
 			w.Header().Set("Content-Type", "application/json")
-			w.Write([]byte(`{"error": "api key is invalid"}`))
+			w.WriteHeader(http.StatusUnauthorized)
+			_ = json.NewEncoder(w).Encode(HttpCommonError{Error: "api key is invalid"})
 			return
 		}
 	}
@@ -308,67 +280,47 @@ func (s *Server) submitIncindent(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 	var body Incident
 	if err := decoder.Decode(&body); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
 		w.Header().Set("Content-Type", "application/json")
-		errBytes, marshalErr := json.Marshal(map[string]string{
-			"error": err.Error(),
-		})
-		if marshalErr != nil {
-			log.Error().Stack().Err(err).Msg("failed to marshal json")
-			w.Write([]byte(`{"error": "internal server error"}`))
-			return
-		}
-		w.Write(errBytes)
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(HttpCommonError{Error: err.Error()})
 		return
 	}
 	defer r.Body.Close()
 
 	if err := body.Validate(); err != nil {
-		w.WriteHeader(http.StatusBadRequest)
 		w.Header().Set("Content-Type", "application/json")
-		errBytes, marshalErr := json.Marshal(map[string]string{
-			"error": err.Error(),
-		})
-		if marshalErr != nil {
-			log.Error().Stack().Err(err).Msg("failed to marshal json")
-			w.Write([]byte(`{"error": "internal server error"}`))
-			return
-		}
-		w.Write(errBytes)
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(HttpCommonError{Error: err.Error()})
 		return
 	}
 
 	err := s.incidentWriter.Write(r.Context(), body)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
 		w.Header().Set("Content-Type", "application/json")
-		errBytes, err := json.Marshal(map[string]string{
-			"error": err.Error(),
-		})
-		if err != nil {
-			log.Error().Stack().Err(err).Msg("failed to marshal json")
-			w.Write([]byte(`{"error": "internal server error"}`))
-			return
-		}
-		w.Write(errBytes)
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(HttpCommonError{Error: err.Error()})
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
-	w.Write([]byte(`{"message": "success"}`))
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(HttpCommonSuccess{Message: "success"})
 }
 
 func (s *Server) pushHealthcheck(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		_ = json.NewEncoder(w).Encode(HttpCommonError{Error: "Method not allowed"})
 		return
 	}
 
 	// Get monitor ID from URL path
 	monitorID := chi.URLParam(r, "monitor_id")
 	if monitorID == "" {
-		http.Error(w, "monitor_id is required", http.StatusBadRequest)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(HttpCommonError{Error: "monitor_id is required"})
 		return
 	}
 
@@ -377,7 +329,9 @@ func (s *Server) pushHealthcheck(w http.ResponseWriter, r *http.Request) {
 
 	// Validate monitor ID exists
 	if !slices.Contains(monitorIds, monitorID) {
-		http.Error(w, "Invalid monitor_id", http.StatusBadRequest)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(HttpCommonError{Error: "Invalid monitor_id"})
 		return
 	}
 
@@ -390,7 +344,9 @@ func (s *Server) pushHealthcheck(w http.ResponseWriter, r *http.Request) {
 	if pingStr != "" {
 		ping, err := strconv.ParseFloat(pingStr, 64)
 		if err != nil {
-			http.Error(w, "Invalid ping value", http.StatusBadRequest)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			_ = json.NewEncoder(w).Encode(HttpCommonError{Error: "Invalid ping value"})
 			return
 		}
 		latency = int64(ping * 1000) // Convert seconds to milliseconds
@@ -404,7 +360,9 @@ func (s *Server) pushHealthcheck(w http.ResponseWriter, r *http.Request) {
 	case "down":
 		monitorStatus = MonitorStatusFailure
 	default:
-		http.Error(w, "Invalid status value", http.StatusBadRequest)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(HttpCommonError{Error: "Invalid status value"})
 		return
 	}
 
@@ -418,14 +376,18 @@ func (s *Server) pushHealthcheck(w http.ResponseWriter, r *http.Request) {
 
 	// Validate the historical record
 	if valid, err := historical.Validate(); !valid || err != nil {
-		http.Error(w, "Invalid healthcheck data", http.StatusBadRequest)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(HttpCommonError{Error: "Invalid healthcheck data"})
 		return
 	}
 
 	// Write to storage
 	if err := s.historicalWriter.Write(r.Context(), historical); err != nil {
 		log.Error().Err(err).Msg("Failed to write healthcheck result")
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(HttpCommonError{Error: "Failed to write healthcheck result"})
 		return
 	}
 
@@ -435,6 +397,7 @@ func (s *Server) pushHealthcheck(w http.ResponseWriter, r *http.Request) {
 		Body:   historical,
 	})
 
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("OK"))
+	_ = json.NewEncoder(w).Encode(HttpCommonSuccess{Message: "OK"})
 }
