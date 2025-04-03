@@ -182,6 +182,10 @@ func main() {
 	go aggregateWorker.RunDailyAggregate()
 	go aggregateWorker.RunHourlyAggregate()
 
+	// Initialize cleanup worker
+	cleanupWorker := NewCleanupWorker(db, config.RetentionPeriod)
+	go cleanupWorker.Run(context.Background())
+
 	server := NewServer(ServerConfig{
 		SSLRedirect:             false,
 		Environment:             environment,
