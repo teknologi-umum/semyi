@@ -54,12 +54,12 @@ export default function Tooltip(props: TooltipProps) {
             {props.snapshot?.status === 0
               ? "UP"
               : props.snapshot?.status === 1
-              ? "DOWN"
-              : props.snapshot?.status === 2
-              ? "DEGRADED"
-              : props.snapshot?.status === 3
-              ? "MAINTENANCE"
-              : "LIMITED"}
+                ? "DOWN"
+                : props.snapshot?.status === 2
+                  ? "DEGRADED"
+                  : props.snapshot?.status === 3
+                    ? "MAINTENANCE"
+                    : "LIMITED"}
           </span>
         </Match>
       </Switch>

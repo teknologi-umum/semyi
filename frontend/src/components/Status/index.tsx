@@ -90,12 +90,12 @@ export default function Status(props: StatusProps) {
                     ? props.snapshots[i].status === 0
                       ? "var(--color-emerald)"
                       : props.snapshots[i].status === 1
-                      ? "var(--color-red)"
-                      : props.snapshots[i].status === 2
-                      ? "var(--color-amber)"
-                      : props.snapshots[i].status === 3
-                      ? "var(--color-blue)"
-                      : "var(--color-purple)"
+                        ? "var(--color-red)"
+                        : props.snapshots[i].status === 2
+                          ? "var(--color-amber)"
+                          : props.snapshots[i].status === 3
+                            ? "var(--color-blue)"
+                            : "var(--color-purple)"
                     : "var(--color-lighter-gray)"
                 }
                 fill-opacity="1"
