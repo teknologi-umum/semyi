@@ -24,8 +24,9 @@ type Response struct {
 // Worker should only run checks for a single monitor, with specific type (HTTP or ICMP monitor).
 // For each monitor result (success or fail), it should push the result into the monitor processor.
 type Worker struct {
-	monitor   Monitor
-	processor *Processor
+	monitor          Monitor
+	processor        *Processor
+	historicalReader *MonitorHistoricalReader
 }
 
 func NewWorker(monitor Monitor, processor *Processor) (*Worker, error) {
@@ -68,6 +69,7 @@ func (w *Worker) Run() {
 
 		var response Response
 		var err error
+		var doNotWriteToDatabase = false
 		// Make the request
 		switch w.monitor.Type {
 		case MonitorTypeHTTP:
@@ -84,11 +86,24 @@ func (w *Worker) Run() {
 				cancel()
 				log.Error().Err(err).Msg("failed to make icmp request")
 			}
+		case MonitorTypePull:
+			log.Debug().Str("monitor_id", w.monitor.UniqueID).Msg("pulling data")
+			response, err = w.backfillPullHealthcheck(ctx)
+			if err != nil {
+				cancel()
+				log.Error().Err(err).Msg("failed to make pull request")
+			}
+
+			if response.Success {
+				doNotWriteToDatabase = true
+			}
 		}
 
-		// Insert the response to the database
-		log.Debug().Str("monitor_id", w.monitor.UniqueID).Msg("processing response")
-		go w.processor.ProcessResponse(response)
+		if !doNotWriteToDatabase {
+			// Insert the response to the database
+			log.Debug().Str("monitor_id", w.monitor.UniqueID).Msg("processing response")
+			go w.processor.ProcessResponse(response)
+		}
 
 		// Sleep for the interval
 		log.Debug().Str("monitor_id", w.monitor.UniqueID).Msgf("sleeping for %d seconds", w.monitor.Interval)
@@ -234,6 +249,35 @@ func (w *Worker) makeIcmpRequest(ctx context.Context) (Response, error) {
 		StatusCode:      0,
 		RequestDuration: requestDuration,
 		Timestamp:       time.Now().UTC(),
+		Monitor:         w.monitor,
+	}, nil
+}
+
+// backfillPullHealthcheck is used to backfill the healthcheck data for pull monitors.
+// It will search for the latest historical data for the monitor, if there are no data
+// for a certain period, it will set the status to failure.
+func (w *Worker) backfillPullHealthcheck(ctx context.Context) (Response, error) {
+	historical, err := w.historicalReader.ReadRawLatest(ctx, w.monitor.UniqueID)
+	if err != nil {
+		return Response{}, fmt.Errorf("failed to read historical data: %w", err)
+	}
+
+	// See if `historical.Timestamp` is older than `w.monitor.Interval`
+	if historical.Timestamp.Before(time.Now().Add(-time.Duration(w.monitor.Interval) * time.Second)) {
+		return Response{
+			Success:         false,
+			StatusCode:      0,
+			RequestDuration: 0,
+			Timestamp:       time.Now().UTC(),
+			Monitor:         w.monitor,
+		}, nil
+	}
+
+	return Response{
+		Success:         true, // Whatever the actual data is, we consider it as success
+		StatusCode:      0,
+		RequestDuration: 0,
+		Timestamp:       historical.Timestamp,
 		Monitor:         w.monitor,
 	}, nil
 }

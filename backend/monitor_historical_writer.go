@@ -9,13 +9,6 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-type MonitorStatus uint8
-
-const (
-	MonitorStatusSuccess MonitorStatus = iota
-	MonitorStatusFailure
-)
-
 type MonitorHistoricalWriter struct {
 	db *sql.DB
 }
