@@ -16,9 +16,10 @@ export default function EndpointOverviewCard(props: EndpointOverviewCardProps) {
     props.staticSnapshot || [],
   );
   const uptimeRate = createMemo(() => {
-    const uptime = snapshot().filter((r) => r.status === 0).length;
     const total = snapshot().length;
-    return ((uptime / total) * 100).toFixed(1);
+    if (total === 0) return 0;
+    const upCount = snapshot().filter((s) => s.status === 0).length;
+    return Math.round((upCount / total) * 100);
   });
   const avgRespTime = createMemo(() => {
     const total = snapshot().reduce((acc, r) => acc + (r.latency ?? 0), 0);

@@ -49,7 +49,18 @@ export default function Tooltip(props: TooltipProps) {
             <></>
           )}
           <span class={styles["tooltip__response-time"]}>Duration: {props.snapshot?.latency}ms</span>
-          <span class={styles["tooltip__response-time"]}>Status: {props.snapshot?.status === 0 ? "UP" : "DOWN"}</span>
+          <span class={styles["tooltip__response-time"]}>
+            Status:{" "}
+            {props.snapshot?.status === 0
+              ? "UP"
+              : props.snapshot?.status === 1
+              ? "DOWN"
+              : props.snapshot?.status === 2
+              ? "DEGRADED"
+              : props.snapshot?.status === 3
+              ? "MAINTENANCE"
+              : "LIMITED"}
+          </span>
         </Match>
       </Switch>
     </div>
