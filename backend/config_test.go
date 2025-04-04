@@ -150,6 +150,31 @@ retention_period = 90`,
 			t.Error("expected error for non-existent file but got none")
 		}
 	})
+
+	t.Run("Not set retention_period should defaults to 120", func(t *testing.T) {
+		tempFile := filepath.Join(tempDir, "config.json")
+		err := os.WriteFile(tempFile, []byte(`{
+			"monitors": [{"unique_id": "test-1", "name": "Test Monitor", "type": "http", "interval": 60, "timeout": 30, "http_endpoint": "https://example.com"}]
+		}`), 0644)
+		if err != nil {
+			t.Fatalf("failed to create temporary file: %v", err)
+		}
+
+		t.Cleanup(func() {
+			if err := os.Remove(tempFile); err != nil {
+				t.Logf("failed to remove temporary file %s: %v", tempFile, err)
+			}
+		})
+
+		config, err := main.ReadConfigurationFile(tempFile)
+		if err != nil {
+			t.Fatalf("failed to read configuration file: %v", err)
+		}
+
+		if config.RetentionPeriod != 120 {
+			t.Errorf("expected retention period to be 120 but got %d", config.RetentionPeriod)
+		}
+	})
 }
 
 // Helper function to check if a string contains another string
