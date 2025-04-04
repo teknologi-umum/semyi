@@ -382,11 +382,17 @@ func (s *Server) pushHealthcheck(w http.ResponseWriter, r *http.Request) {
 
 	// Convert status string to MonitorStatus
 	var monitorStatus MonitorStatus
-	switch strings.ToLower(status) {
+	switch strings.TrimSpace(strings.ToLower(status)) {
 	case "up":
 		monitorStatus = MonitorStatusSuccess
 	case "down":
 		monitorStatus = MonitorStatusFailure
+	case "degraded":
+		monitorStatus = MonitorStatusDegradedPerformance
+	case "under_maintenance":
+		monitorStatus = MonitorStatusUnderMaintenance
+	case "limited":
+		monitorStatus = MonitorStatusLimitedAvailability
 	default:
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusBadRequest)
@@ -421,8 +427,10 @@ func (s *Server) pushHealthcheck(w http.ResponseWriter, r *http.Request) {
 
 	// Publish to broker for real-time updates
 	s.centralBroker.Publish(monitorID, &BrokerMessage[MonitorHistorical]{
-		Header: make(map[string]string),
-		Body:   historical,
+		Header: map[string]string{
+			"interval": "raw",
+		},
+		Body: historical,
 	})
 
 	w.Header().Set("Content-Type", "application/json")

@@ -81,6 +81,7 @@ type MonitorType string
 const (
 	MonitorTypeHTTP MonitorType = "http"
 	MonitorTypePing MonitorType = "ping"
+	MonitorTypePull MonitorType = "pull"
 )
 
 type AlertProviderType string
@@ -233,6 +234,10 @@ func (m Monitor) Validate() (bool, error) {
 	case MonitorTypePing:
 		if m.IcmpHostname == "" {
 			return false, fmt.Errorf("hostname is required")
+		}
+	case MonitorTypePull:
+		if m.Interval <= 0 {
+			return false, fmt.Errorf("interval must be greater than 0")
 		}
 	default:
 		return false, fmt.Errorf("invalid monitor type")
