@@ -21,25 +21,28 @@ export default function OverviewPage() {
   const source = new EventSource(`${BASE_URL}/api/overview`);
   const snapshotStream$ = fromEvent<MessageEvent<string>>(source, "message").pipe(
     map((event) => {
-      return Sentry.startSpan({
-        name: "overview.stream_message",
-        op: "function",
-        attributes: {
-          "semyi.page": "overview",
+      return Sentry.startSpan(
+        {
+          name: "overview.stream_message",
+          op: "function",
+          attributes: {
+            "semyi.page": "overview",
+          },
         },
-      }, (span) => {
-        try {
-          const data = JSON.parse(event.data) as Snapshot;
-          return data;
-        } catch (err) {
-          span.setStatus({
-            code: 2,
-            message: "parse_error",
-          });
-          throw err;
-        }
-      });
-    })
+        (span) => {
+          try {
+            const data = JSON.parse(event.data) as Snapshot;
+            return data;
+          } catch (err) {
+            span.setStatus({
+              code: 2,
+              message: "parse_error",
+            });
+            throw err;
+          }
+        },
+      );
+    }),
   );
 
   onMount(() => {
