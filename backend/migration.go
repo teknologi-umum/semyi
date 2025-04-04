@@ -127,6 +127,10 @@ func Migrate(db *sql.DB, ctx context.Context, directionUp bool) error {
 	for _, migrationScript := range migrationScripts {
 		// We split everything by `;` and execute each statement in the transaction.
 		for statement := range strings.SplitSeq(migrationScript, ";") {
+			if strings.TrimSpace(statement) == "" {
+				continue
+			}
+
 			_, err = tx.ExecContext(
 				ctx,
 				statement,
