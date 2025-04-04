@@ -19,6 +19,7 @@ func NewAggregateWorker(monitorIds []string, reader *MonitorHistoricalReader, wr
 
 func (w *AggregateWorker) RunHourlyAggregate() {
 	for {
+		log.Debug().Msg("running hourly aggregate")
 		var startTime = time.Now()
 
 		for _, monitorId := range w.monitorIds {
@@ -42,7 +43,7 @@ func (w *AggregateWorker) RunHourlyAggregate() {
 				}
 			}
 
-			if (len(lastHourData) == 0) {
+			if len(lastHourData) == 0 {
 				continue
 			}
 
@@ -72,6 +73,7 @@ func (w *AggregateWorker) RunHourlyAggregate() {
 		// Calculate the time that we allowed to sleep. We should wake up 10 minutes after the `startTime`
 		var allowedSleepTime = startTime.Add(10 * time.Minute).Sub(time.Now())
 		if allowedSleepTime > 0 {
+			log.Debug().Msgf("sleeping for %s", allowedSleepTime)
 			time.Sleep(allowedSleepTime)
 		}
 	}
@@ -79,6 +81,7 @@ func (w *AggregateWorker) RunHourlyAggregate() {
 
 func (w *AggregateWorker) RunDailyAggregate() {
 	for {
+		log.Debug().Msg("running daily aggregate")
 		var startTime = time.Now()
 
 		for _, monitorId := range w.monitorIds {
@@ -99,7 +102,7 @@ func (w *AggregateWorker) RunDailyAggregate() {
 				}
 			}
 
-			if (len(lastHourData) == 0) {
+			if len(lastHourData) == 0 {
 				continue
 			}
 
@@ -129,6 +132,7 @@ func (w *AggregateWorker) RunDailyAggregate() {
 		// Calculate the time that we allowed to sleep. We should wake up 1 hour after the `startTime`
 		var allowedSleepTime = startTime.Add(1 * time.Hour).Sub(time.Now())
 		if allowedSleepTime > 0 {
+			log.Debug().Msgf("sleeping for %s", allowedSleepTime)
 			time.Sleep(allowedSleepTime)
 		}
 	}

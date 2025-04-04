@@ -1,42 +1,36 @@
-import { map, Observable, take } from "rxjs";
-import type { Response } from "@/types";
-import styles from "./styles.module.css";
+import type { Response, Snapshot } from "@/types";
+import { type Observable, map, take } from "rxjs";
 import { createMemo, createSignal, onMount } from "solid-js";
+import styles from "./styles.module.css";
 
 interface EndpointOverviewCardProps {
   name: string;
-  staticSnapshot: Response[] | undefined;
-  snapshotStream$: Observable<Response>;
+  staticSnapshot: Snapshot[] | undefined;
+  snapshotStream$: Observable<Snapshot>;
 }
 
 export default function EndpointOverviewCard(props: EndpointOverviewCardProps) {
-  const [snapshot, setSnapshot] = createSignal<Response[]>(
+  const [snapshot, setSnapshot] = createSignal<Snapshot[]>(
     // this doesn't need to be reactive
     // eslint-disable-next-line solid/reactivity
-    props.staticSnapshot || []
+    props.staticSnapshot || [],
   );
   const uptimeRate = createMemo(() => {
-    const uptime = snapshot().filter((r) => r.success).length;
+    const uptime = snapshot().filter((r) => r.status === 0).length;
     const total = snapshot().length;
-    return (uptime / total) * 100;
+    return ((uptime / total) * 100).toFixed(1);
   });
   const avgRespTime = createMemo(() => {
-    const total = snapshot().reduce((acc, r) => acc + r.requestDuration, 0);
+    const total = snapshot().reduce((acc, r) => acc + (r.latency ?? 0), 0);
     return (total / snapshot().length).toFixed(2);
   });
   const maxRespTime = createMemo(() => {
-    const max = snapshot().reduce(
-      (acc, r) => (r.requestDuration > acc ? r.requestDuration : acc),
-      0
-    );
-    return max;
+    const max = snapshot().reduce((acc, r) => (r.latency > acc ? r.latency : acc), 0);
+    return max.toFixed(1);
   });
   const minRespTime = createMemo(() => {
-    const min = snapshot().reduce(
-      (acc, r) => (r.requestDuration < acc ? r.requestDuration : acc),
-      Infinity
-    );
-    return min;
+    const min = snapshot().reduce((acc, r) => (r.latency < acc ? r.latency : acc), Number.POSITIVE_INFINITY);
+    return min.toFixed(1);
   });
 
   onMount(() => {
@@ -45,7 +39,7 @@ export default function EndpointOverviewCard(props: EndpointOverviewCardProps) {
         // this doesn't need to be reactive
         // eslint-disable-next-line solid/reactivity
         map((newSnapshot) => snapshot().concat(newSnapshot)),
-        take(100)
+        take(100),
       )
       .subscribe((s) => setSnapshot(s));
   });

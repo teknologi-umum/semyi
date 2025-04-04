@@ -28,7 +28,7 @@ func (r *MonitorHistoricalReader) ReadRawHistorical(ctx context.Context, monitor
 		}
 	}()
 
-	rows, err := conn.QueryContext(ctx, "SELECT timestamp, monitor_id, status, latency FROM monitor_historical WHERE monitor_id = ?", monitorId)
+	rows, err := conn.QueryContext(ctx, "SELECT timestamp, monitor_id, status, latency FROM monitor_historical WHERE monitor_id = ? ORDER BY timestamp DESC", monitorId)
 	if err != nil {
 		return []MonitorHistorical{}, fmt.Errorf("failed to read raw historical data: %w", err)
 	}
@@ -64,7 +64,7 @@ func (r *MonitorHistoricalReader) ReadHourlyHistorical(ctx context.Context, moni
 		}
 	}()
 
-	rows, err := conn.QueryContext(ctx, "SELECT timestamp, monitor_id, status, latency FROM monitor_historical_hourly_aggregate WHERE monitor_id = ?", monitorId)
+	rows, err := conn.QueryContext(ctx, "SELECT timestamp, monitor_id, status, latency FROM monitor_historical_hourly_aggregate WHERE monitor_id = ? ORDER BY timestamp DESC", monitorId)
 	if err != nil {
 		return []MonitorHistorical{}, fmt.Errorf("failed to read hourly historical data: %w", err)
 	}
@@ -100,7 +100,7 @@ func (r *MonitorHistoricalReader) ReadDailyHistorical(ctx context.Context, monit
 		}
 	}()
 
-	rows, err := conn.QueryContext(ctx, "SELECT timestamp, monitor_id, status, latency FROM monitor_historical_daily_aggregate WHERE monitor_id = ?", monitorId)
+	rows, err := conn.QueryContext(ctx, "SELECT timestamp, monitor_id, status, latency FROM monitor_historical_daily_aggregate WHERE monitor_id = ? ORDER BY timestamp DESC", monitorId)
 	if err != nil {
 		return []MonitorHistorical{}, fmt.Errorf("failed to read daily historical data: %w", err)
 	}

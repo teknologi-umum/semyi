@@ -3,10 +3,10 @@ package main
 import "time"
 
 type MonitorHistorical struct {
-	MonitorID string
-	Status    MonitorStatus
-	Latency   int64
-	Timestamp time.Time
+	MonitorID string        `json:"monitor_id"`
+	Status    MonitorStatus `json:"status"`
+	Latency   int64         `json:"latency"`
+	Timestamp time.Time     `json:"timestamp"`
 }
 
 func (m MonitorHistorical) Validate() (bool, error) {

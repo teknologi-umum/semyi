@@ -1,18 +1,16 @@
-import { createMemo, createSignal, For, onMount } from "solid-js";
 import Tooltip from "@/components/StatusTooltip";
-import type { Response } from "@/types";
+import type { Response, Snapshot } from "@/types";
+import { For, createMemo, createSignal, onMount } from "solid-js";
 import styles from "./styles.module.css";
 
 interface StatusProps {
-  snapshots: Response[];
+  snapshots: Snapshot[];
 }
 
 export default function Status(props: StatusProps) {
   let container: HTMLDivElement | undefined;
   const [containerWidth, setContainerWidth] = createSignal(0);
-  const [hoveredSnapshotIndex, setHoveredSnapshotIndex] = createSignal<
-    number | null
-  >(null);
+  const [hoveredSnapshotIndex, setHoveredSnapshotIndex] = createSignal<number | null>(null);
 
   const CONTAINER_HEIGHT = 30;
   const BAR_AMOUNT = 100;
@@ -41,7 +39,7 @@ export default function Status(props: StatusProps) {
     const idx = target.getAttribute("data-index");
     if (idx === null) return;
 
-    setHoveredSnapshotIndex(parseInt(idx));
+    setHoveredSnapshotIndex(Number.parseInt(idx));
   }
 
   function hideTooltip() {
@@ -52,23 +50,26 @@ export default function Status(props: StatusProps) {
     <>
       <Tooltip
         isVisible={hoveredSnapshotIndex() !== null}
-        snapshotIndex={hoveredSnapshotIndex()}
-        snapshot={props.snapshots[hoveredSnapshotIndex()!]}
-        left={containerWidth() - hoveredSnapshotIndex() * (barWidth() + GAP)}
+        snapshotIndex={hoveredSnapshotIndex() ?? 0}
+        snapshot={props.snapshots[hoveredSnapshotIndex() ?? 0]}
+        left={containerWidth() - (hoveredSnapshotIndex() ?? 0) * (barWidth() + GAP)}
       />
       <div
         class={styles.status}
         ref={container}
         onMouseOver={showTooltip}
         onMouseLeave={hideTooltip}
+        onFocus={() => {}}
+        onBlur={hideTooltip}
       >
         <svg
           width={containerWidth()}
-          height={30}
-          xmlns="http://www.w3.org/2000/svg"
-          version="1.1"
+          height={CONTAINER_HEIGHT}
           viewBox={`0 0 ${containerWidth()} ${CONTAINER_HEIGHT}`}
+          role="img"
+          aria-label="Status timeline"
         >
+          <title>Status timeline</title>
           <For
             each={Array(BAR_AMOUNT)
               .fill(0)
@@ -85,8 +86,8 @@ export default function Status(props: StatusProps) {
                 x={containerWidth() - i * (barWidth() + GAP)}
                 y="0"
                 fill={
-                  props.snapshots?.[i]?.statusCode !== undefined
-                    ? props.snapshots[i].success
+                  props.snapshots?.[i]?.status !== undefined
+                    ? props.snapshots[i].status === 0
                       ? "var(--color-emerald)"
                       : "var(--color-red)"
                     : "var(--color-lighter-gray)"

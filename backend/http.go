@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	"github.com/rs/cors"
 	"github.com/rs/zerolog/log"
 	"github.com/unrolled/secure"
@@ -60,7 +61,6 @@ func NewServer(config ServerConfig) *http.Server {
 	})
 
 	corsMiddleware := cors.New(cors.Options{
-		Debug:          config.Environment == "development",
 		AllowedOrigins: []string{"*"},
 		AllowedMethods: []string{"GET", "POST", "OPTIONS"},
 		AllowedHeaders: []string{"Content-Type"},
@@ -68,6 +68,7 @@ func NewServer(config ServerConfig) *http.Server {
 
 	api := chi.NewRouter()
 	api.Use(corsMiddleware.Handler)
+	api.Use(middleware.RequestID)
 	api.Get("/api/overview", server.snapshotOverview)
 	api.Get("/api/by", server.snapshotBy)
 	api.Get("/api/static", server.staticSnapshot)
@@ -75,6 +76,8 @@ func NewServer(config ServerConfig) *http.Server {
 	api.Get("/api/push/{monitor_id}", server.pushHealthcheck)
 
 	r := chi.NewRouter()
+	r.Use(middleware.Recoverer)
+	r.Use(middleware.RealIP)
 	r.Use(secureMiddleware.Handler)
 	r.Handle("/api/*", corsMiddleware.Handler(api))
 	r.Handle("/", http.FileServer(http.Dir(config.StaticPath)))
@@ -86,6 +89,7 @@ func NewServer(config ServerConfig) *http.Server {
 }
 
 func (s *Server) snapshotOverview(w http.ResponseWriter, r *http.Request) {
+	requestId := middleware.GetReqID(r.Context())
 	flusher, ok := w.(http.Flusher)
 	if !ok {
 		w.Header().Set("Content-Type", "application/json")
@@ -94,6 +98,12 @@ func (s *Server) snapshotOverview(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+	w.WriteHeader(http.StatusOK)
+
+	log.Debug().Str("request_id", requestId).Str("component", "snapshotOverview").Msg("snapshot overview server-sent-event requested, trying to subscribe to endpoints")
 	subscriber, err := NewSubscriber(s.centralBroker, monitorIds...)
 	if err != nil {
 		w.Header().Set("Content-Type", "application/json")
@@ -102,29 +112,38 @@ func (s *Server) snapshotOverview(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	_, err = w.Write([]byte("data: {\"type\": \"hello\"}\n\n"))
+	if err != nil {
+		log.Error().Str("request_id", requestId).Str("component", "snapshotOverview").Err(err).Msg("failed to write data")
+	}
+	flusher.Flush()
+
 	for {
 		select {
 		case <-r.Context().Done():
+			log.Debug().Str("request_id", requestId).Str("component", "snapshotOverview").Msg("context done, closing")
 			return
 		case data := <-subscriber.Listen(r.Context()):
+			log.Debug().Str("request_id", requestId).Str("component", "snapshotOverview").Msg("received data from endpoint")
 			marshaled, err := json.Marshal(data)
 			if err != nil {
-				log.Printf("failed to marshal data: %s", err)
+				log.Error().Str("request_id", requestId).Str("component", "snapshotOverview").Err(err).Msg("failed to marshal data")
 			}
 
 			_, err = w.Write([]byte("data: " + string(marshaled) + "\n\n"))
 			if err != nil {
-				log.Printf("failed to write data: %s", err)
+				log.Error().Str("request_id", requestId).Str("component", "snapshotOverview").Err(err).Msg("failed to write data")
 			}
 
 			flusher.Flush()
 		default:
-			time.Sleep(time.Millisecond * 10)
+			time.Sleep(time.Second)
 		}
 	}
 }
 
 func (s *Server) snapshotBy(w http.ResponseWriter, r *http.Request) {
+	requestId := middleware.GetReqID(r.Context())
 	flusher, ok := w.(http.Flusher)
 	if !ok {
 		w.Header().Set("Content-Type", "application/json")
@@ -157,6 +176,7 @@ func (s *Server) snapshotBy(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Connection", "keep-alive")
 	w.WriteHeader(http.StatusOK)
 
+	log.Debug().Str("wanted_monitor_ids", ids).Str("request_id", requestId).Str("component", "snapshotBy").Msg("snapshot by server-sent-event requested, trying to subscribe to endpoints")
 	sub, err := NewSubscriber(s.centralBroker, wantedMonitorIds...)
 	if err != nil {
 		w.Header().Set("Content-Type", "application/json")
@@ -165,24 +185,32 @@ func (s *Server) snapshotBy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	_, err = w.Write([]byte("data: {\"type\": \"hello\"}\n\n"))
+	if err != nil {
+		log.Error().Str("wanted_monitor_ids", ids).Str("request_id", requestId).Str("component", "snapshotBy").Err(err).Msg("failed to write data")
+	}
+	flusher.Flush()
+
 	for {
 		select {
 		case <-r.Context().Done():
+			log.Debug().Str("wanted_monitor_ids", ids).Str("request_id", requestId).Str("component", "snapshotBy").Msg("context done, closing")
 			return
 		case data := <-sub.Listen(r.Context()):
+			log.Debug().Str("wanted_monitor_ids", ids).Str("request_id", requestId).Str("component", "snapshotBy").Msg("received data from endpoint")
 			marshaled, err := json.Marshal(data)
 			if err != nil {
-				log.Printf("failed to marshal data: %s", err)
+				log.Error().Str("wanted_monitor_ids", ids).Str("request_id", requestId).Str("component", "snapshotBy").Err(err).Msg("failed to marshal data")
 			}
 
 			_, err = w.Write([]byte("data: " + string(marshaled) + "\n\n"))
 			if err != nil {
-				log.Printf("failed to write data: %s", err)
+				log.Error().Str("wanted_monitor_ids", ids).Str("request_id", requestId).Str("component", "snapshotBy").Err(err).Msg("failed to write data")
 			}
 
 			flusher.Flush()
 		default:
-			time.Sleep(time.Millisecond * 10)
+			time.Sleep(time.Second)
 		}
 	}
 }
