@@ -36,11 +36,8 @@ jobs:
     name: Backend
     runs-on: ubuntu-latest
     container: golang:1.24
-    defaults:
-      run:
-        working-directory: ./backend
     timeout-minutes: 30
-    steps:      
+    steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -49,11 +46,17 @@ jobs:
 
       - name: Build
         run: go build -buildvcs=false .
+        working-directory: ./backend
 
       - name: Test
-        run: go test -v
+        run: go test -v -coverprofile=coverage.out -covermode=atomic ./...
+        working-directory: ./backend
 
-      - uses: codecov/codecov-action@v3
+      - uses: codecov/codecov-action@v5
+        with:
+          files: ./backend/coverage.out
+          flags: backend
+          token: ${{ secrets.CODECOV_TOKEN }}
 
   cd:
     name: CD
@@ -93,6 +96,7 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          platform: linux/amd64,linux/arm64
           secrets: |
             "SENTRY_DSN=${{ secrets.SENTRY_DSN }}"
             "SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }}"

@@ -1,10 +1,10 @@
-FROM node:16.14.0-bookworm AS frontend
+FROM node:18.20-bookworm AS frontend
 WORKDIR /app
 COPY frontend/ .
 COPY config.json /config.json
 RUN npm install && npm run build
 
-FROM golang:1.22-bookworm AS backend
+FROM golang:1.24-bookworm AS backend
 WORKDIR /app
 COPY backend/ .
 COPY config.json /config.json

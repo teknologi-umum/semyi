@@ -34,9 +34,6 @@ jobs:
     name: Backend
     runs-on: ubuntu-latest
     container: golang:1.24
-    defaults:
-      run:
-        working-directory: ./backend
     timeout-minutes: 30
     steps:
       - name: Checkout repository
@@ -47,8 +44,14 @@ jobs:
 
       - name: Build
         run: go build -buildvcs=false .
+        working-directory: ./backend
 
       - name: Test
-        run: go test -v
+        run: go test -v -coverprofile=coverage.out -covermode=atomic ./...
+        working-directory: ./backend
 
-      - uses: codecov/codecov-action@v3
+      - uses: codecov/codecov-action@v5
+        with:
+          files: ./backend/coverage.out
+          flags: backend
+          token: ${{ secrets.CODECOV_TOKEN }}
