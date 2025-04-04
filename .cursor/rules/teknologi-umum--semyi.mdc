@@ -5,7 +5,7 @@ alwaysApply: true
 ---
 One rule that you need to adhere: Whenever you are unsure about a specific part, do ask of the thing you are confused in. Never give out an answer, even if you are forced to do so.
 
-Refer to [project-milestone.md](mdc:.cursor/docs/project-milestone.md) for guarding on things to be done.
+Refer to [project-milestone.md](mdc:.cursor/docs/project-milestone.md) and [project-monograph.md](mdc:.cursor/docs/project-monograph.md) for guarding on things to be done.
 
 Whenever possible, always put an in-code documentation of your decision that answers "Why a certain things are done this way?".
 

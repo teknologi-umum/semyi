@@ -1,4 +1,3 @@
-
 ## Must Have Project Capabilities
 
 1. Make healthcheck requests to target (similar to pull-based app monitoring/observability)
@@ -14,18 +13,16 @@ Old monograph link: https://monogr.ph/664d42567e3a71c23dfea211 -- I think this l
 1. Dynamically configuring healthcheck targets and/or incident alerting
 2. Uptime Kuma API compatibility for sending uptime checks (refer to this specific file + commit https://github.com/teknologi-umum/bot/blob/7382c332521018a51ae33f26bb068be65dadd0df/src/uptime.js) (found something here https://www.postman.com/gabrielfnlima/uptime-kuma-api-collection/collection/vadwal6/uptime-kuma-rest-api)
 3. TLS certificate expiration notice for pull-based (...probably?)
-4. ...more?
-
-## Things to do
+4. ...more?## Things to do
 
 We need to check if these already implemented and already works.
 
 ### Healthcheck
-- [ ] Able to configure sites, dynamically (through web UI) or statically (through config files) -- I think the last time we implemented this was through config files, since the UI would be a read only. But we'll see if we can change this to be dynamically.
+- [x] Able to configure sites, ~~dynamically (through web UI)~~ or statically (through config files) -- I think the last time we implemented this was through config files, since the UI would be a read only. But we'll see if we can change this to be dynamically.
 - [x] Able to poll to target sites (meaning we make a HTTP request [or any other protocol] to that endpoint)
 - [x] Able to save healthcheck data to some storage backends. (see https://github.com/teknologi-umum/semyi/issues/26, https://github.com/teknologi-umum/semyi/issues/23)
-- [x] Able to retrieve healthcheck result remotely (similar to how push-mechanism works in app monitoring/observability)
-- [ ] HTTP API endpoint for list healthcheck results (for web UI)
+- [x] Able to retrieve healthcheck result remotely (similar to how push-mechanism works in app monitoring/observability) #45 
+- [x] HTTP API endpoint for list healthcheck results (for web UI) -- Validated here https://github.com/teknologi-umum/semyi/pull/51
 
 ### Alerting
 - [ ] Able to send an alert to some platform (see https://github.com/teknologi-umum/semyi/issues/7, https://github.com/teknologi-umum/semyi/issues/8, https://github.com/teknologi-umum/semyi/issues/27)
