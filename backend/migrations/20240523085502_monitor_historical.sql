@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS monitor_historical_hourly_aggregate (
     created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS monitor_historical_hourly_aggregate_monitor_id_timestamp_idx ON monitor_historical_hourly_aggregate (monitor_id, timestamp);
+CREATE UNIQUE INDEX IF NOT EXISTS monitor_historical_hourly_aggregate_monitor_id_timestamp_idx ON monitor_historical_hourly_aggregate (monitor_id, timestamp);
 
 CREATE TABLE IF NOT EXISTS monitor_historical_daily_aggregate (
     timestamp TIMESTAMP NOT NULL,
@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS monitor_historical_daily_aggregate (
     created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS monitor_historical_daily_aggregate_monitor_id_timestamp_idx ON monitor_historical_daily_aggregate (monitor_id, timestamp);
+CREATE UNIQUE INDEX IF NOT EXISTS monitor_historical_daily_aggregate_monitor_id_timestamp_idx ON monitor_historical_daily_aggregate (monitor_id, timestamp);
 -- +goose StatementEnd
 
 -- +goose Down

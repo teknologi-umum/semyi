@@ -11,7 +11,10 @@ export function SunIcon(props: { class: string }) {
       stroke-linecap="round"
       stroke-linejoin="round"
       class={props.class}
+      role="img"
+      aria-label="Sun icon"
     >
+      <title>Sun icon</title>
       <circle cx="12" cy="12" r="5" />
       <line x1="12" y1="1" x2="12" y2="3" />
       <line x1="12" y1="21" x2="12" y2="23" />

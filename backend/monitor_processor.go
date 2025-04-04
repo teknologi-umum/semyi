@@ -11,6 +11,7 @@ import (
 type Processor struct {
 	historicalWriter *MonitorHistoricalWriter
 	historicalReader *MonitorHistoricalReader
+	centralBroker    *Broker[MonitorHistorical]
 
 	telegramAlertProvider Alerter
 	discordAlertProvider  Alerter
@@ -28,15 +29,17 @@ func (m *Processor) ProcessResponse(response Response) {
 		uniqueId = uniqueId[:255]
 	}
 
+	monitorHistorical := MonitorHistorical{
+		MonitorID: uniqueId,
+		Status:    status,
+		Latency:   response.RequestDuration,
+		Timestamp: response.Timestamp,
+	}
+
 	attemptRemaining := 3
 	attemptedEntries := 0
 	for attemptRemaining > 0 {
-		err := m.historicalWriter.Write(context.Background(), MonitorHistorical{
-			MonitorID: uniqueId,
-			Status:    status,
-			Latency:   response.RequestDuration,
-			Timestamp: response.Timestamp,
-		})
+		err := m.historicalWriter.Write(context.Background(), monitorHistorical)
 		if err != nil {
 			attemptedEntries++
 			if attemptRemaining == 0 {
@@ -96,4 +99,12 @@ func (m *Processor) ProcessResponse(response Response) {
 
 		// TODO: incident writer
 	}()
+
+	m.centralBroker.Publish(uniqueId, &BrokerMessage[MonitorHistorical]{
+		Header: map[string]string{
+			"monitor_id": uniqueId,
+			"interval":   "raw",
+		},
+		Body: monitorHistorical,
+	})
 }

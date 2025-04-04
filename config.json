@@ -27,10 +27,30 @@
         "type": "ping",
         "hostname": "1.1.1.1",
         "interval": 30
+    },
+    {
+      "unique_id": "4",
+      "name": "Example",
+      "description": "Example dot com",
+      "type": "http",
+      "public_url": "https://example.com/",
+      "http_endpoint": "https://example.com/_healthz",
+      "interval": 12,
+      "timeout": 10
+    },
+    {
+      "unique_id": "5",
+      "name": "Uptime Server",
+      "description": "Sometimes up sometimes down",
+      "type": "http",
+      "public_url": "http://localhost:9000/",
+      "http_endpoint": "http://localhost:9000/_healthz",
+      "interval": 15,
+      "timeout": 10
     }
   ],
   "webhook": {
-    "url": "http://your-endpoint/",
+    "url": "http://localhost:8080/",
     "success_response": true,
     "failed_response": true
   }

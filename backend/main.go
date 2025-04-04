@@ -145,11 +145,21 @@ func main() {
 		log.Fatal().Err(err).Msg("failed to migrate database")
 	}
 
+	monitorHistoricalReader := NewMonitorHistoricalReader(db)
+	monitorHistoricalWriter := NewMonitorHistoricalWriter(db)
+	centralBroker := NewBroker[MonitorHistorical]()
+
+	aggregateWorker := NewAggregateWorker(monitorIds, monitorHistoricalReader, monitorHistoricalWriter)
+
 	processor := &Processor{
 		telegramAlertProvider: NewTelegramAlertProvider(TelegramProviderConfig{
 			Url:    telegramUrl,
 			ChatID: telegramChatID,
 		}),
+		historicalWriter:     monitorHistoricalWriter,
+		historicalReader:     monitorHistoricalReader,
+		discordAlertProvider: nil,
+		centralBroker:        centralBroker,
 	}
 
 	// Create a new worker
@@ -166,18 +176,13 @@ func main() {
 		go func(worker *Worker) {
 			defer func() {
 				if r := recover(); r != nil {
-					log.Warn().Msgf("[Running worker] Recovered from panic: %v", r)
+					log.Warn().Str("monitor_id", worker.monitor.UniqueID).Msgf("[Running worker] Recovered from panic: %v", r)
 				}
 			}()
 
 			worker.Run()
 		}(worker)
 	}
-
-	monitorHistoricalReader := NewMonitorHistoricalReader(db)
-	monitorHistoricalWriter := NewMonitorHistoricalWriter(db)
-
-	aggregateWorker := NewAggregateWorker(monitorIds, monitorHistoricalReader, monitorHistoricalWriter)
 
 	go aggregateWorker.RunDailyAggregate()
 	go aggregateWorker.RunHourlyAggregate()
@@ -194,7 +199,7 @@ func main() {
 		StaticPath:              staticPath,
 		MonitorHistoricalReader: monitorHistoricalReader,
 		MonitorHistoricalWriter: monitorHistoricalWriter,
-		CentralBroker:           &Broker[MonitorHistorical]{},
+		CentralBroker:           centralBroker,
 		IncidentWriter:          NewIncidentWriter(db),
 		MonitorList:             config.Monitors,
 

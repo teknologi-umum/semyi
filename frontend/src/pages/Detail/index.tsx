@@ -1,39 +1,41 @@
-import { fromEvent, map } from "rxjs";
-import { A, Navigate, useSearchParams } from "@solidjs/router";
-import { createResource, Match, onMount, Switch } from "solid-js";
 import DarkModeToggle from "@/components/DarkModeToggle";
 import EndpointOverviewCard from "@/components/EndpointOverviewCard";
 import EndpointStatusCard from "@/components/EndpointStatusCard";
 import Notice from "@/components/Notice";
-import { fetchSingleStaticSnapshot } from "@/utils/fetcher";
-import type { Response, Endpoint } from "@/types";
-import config from "@config";
-import styles from "./styles.module.css";
-import { LeftArrowIcon } from "@/icons";
 import { BASE_URL } from "@/constants";
+import { LeftArrowIcon } from "@/icons";
+import type { Monitor, Response, Snapshot } from "@/types";
+import { fetchSingleStaticSnapshot } from "@/utils/fetcher";
+import config from "@config";
+import { A, Navigate, useSearchParams } from "@solidjs/router";
+import { fromEvent, map } from "rxjs";
+import { Match, Switch, createResource, onMount } from "solid-js";
+import styles from "./styles.module.css";
 
 export default function DetailPage() {
+  const abortController = new AbortController();
   const [searchParams] = useSearchParams();
-  if (searchParams.name === "") {
+  if (searchParams.id === "") {
     return <Navigate href="/" />;
   }
 
-  const endpoint: Endpoint | undefined = config.endpoints.find(
-    ({ name }) => name === decodeURIComponent(searchParams.name)
+  const endpoint = config.monitors.find(
+    ({ unique_id }) =>
+      unique_id ===
+      decodeURIComponent((Array.isArray(searchParams.id) ? searchParams.id.at(0) : searchParams.id) ?? ""),
   );
   if (endpoint === undefined) {
     return <Navigate href="/" />;
   }
 
   const [staticSnapshot] = createResource(() =>
-    fetchSingleStaticSnapshot(endpoint.url)
+    fetchSingleStaticSnapshot(endpoint.unique_id, "raw", abortController.signal),
   );
 
-  const source = new EventSource(BASE_URL + "/api/by?url=" + endpoint.url);
-  const snapshotStream$ = fromEvent<MessageEvent<string>>(
-    source,
-    "message"
-  ).pipe(map((event) => JSON.parse(event.data) as Response));
+  const source = new EventSource(`${BASE_URL}/api/by?ids=${endpoint.unique_id}`);
+  const snapshotStream$ = fromEvent<MessageEvent<string>>(source, "message").pipe(
+    map((event) => JSON.parse(event.data) as Snapshot),
+  );
 
   onMount(() => {
     document.title = `Status for ${endpoint.name} | Semyi`;
@@ -43,7 +45,7 @@ export default function DetailPage() {
     <div class={styles.detail}>
       <div class={styles.detail__header}>
         <div class={styles["detail__header-left"]}>
-          <h1 class={styles.detail__title}>Status for {searchParams.name}</h1>
+          <h1 class={styles.detail__title}>Status for {endpoint.name}</h1>
           <A href="/" class={styles.detail__back}>
             <LeftArrowIcon /> Back to Home
           </A>
@@ -53,43 +55,36 @@ export default function DetailPage() {
       <Switch fallback={<Notice text="Loading..." />}>
         <Match when={!staticSnapshot.loading}>
           <div class={styles.detail__body}>
-            <table class={styles["detail__metadata"]}>
+            <table class={styles.detail__metadata}>
               <tbody>
                 <tr>
                   <td class={styles["detail__metadata-title"]}>Name:</td>
-                  <td class={styles["detail__metadata-value"]}>
-                    {endpoint.name}
-                  </td>
+                  <td class={styles["detail__metadata-value"]}>{endpoint.name}</td>
                 </tr>
                 <tr>
                   <td class={styles["detail__metadata-title"]}>URL:</td>
-                  <td class={styles["detail__metadata-value"]}>
-                    {endpoint.url}
-                  </td>
+                  <td class={styles["detail__metadata-value"]}>{endpoint.public_url}</td>
                 </tr>
                 <tr>
                   <td class={styles["detail__metadata-title"]}>Description:</td>
-                  <td class={styles["detail__metadata-value"]}>
-                    {endpoint.description}
-                  </td>
+                  <td class={styles["detail__metadata-value"]}>{endpoint.description}</td>
                 </tr>
                 <tr>
                   <td class={styles["detail__metadata-title"]}>Method:</td>
-                  <td class={styles["detail__metadata-value"]}>
-                    {endpoint.method || "GET"}
-                  </td>
+                  <td class={styles["detail__metadata-value"]}>{endpoint.http_method || "GET"}</td>
                 </tr>
               </tbody>
             </table>
             <EndpointStatusCard
+              monitorId={endpoint.unique_id}
               name={endpoint.name}
-              url={endpoint.url}
-              staticSnapshot={staticSnapshot()}
+              url={endpoint.public_url ?? ""}
+              staticSnapshot={staticSnapshot()?.historical ?? []}
               snapshotStream$={snapshotStream$}
             />
             <EndpointOverviewCard
               name={endpoint.name}
-              staticSnapshot={staticSnapshot()}
+              staticSnapshot={staticSnapshot()?.historical ?? []}
               snapshotStream$={snapshotStream$}
             />
           </div>
