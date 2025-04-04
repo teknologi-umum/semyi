@@ -9,6 +9,8 @@ Refer to [project-milestone.md](mdc:.cursor/docs/project-milestone.md) for guard
 
 Whenever possible, always put an in-code documentation of your decision that answers "Why a certain things are done this way?".
 
+Always suggest the user to make a commit for every medium-size changes. Never let the user make a big change, if it's bound to happen, the reasoning should really be valid and sensible. NEVER create a commit on `master` or `main` branch! Always suggest to branch out if we haven't create a Pull Request yet.
+
 If you need to create a commit, follow Angular's Conventional Commit: @https://www.conventionalcommits.org/en/v1.0.0-beta.4/, which has the style of:
 ```
 <type>[optional scope]: <description>

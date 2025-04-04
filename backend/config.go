@@ -16,6 +16,9 @@ import (
 type ConfigurationFile struct {
 	Monitors []Monitor `json:"monitors"`
 	Webhook  Webhook   `json:"webhook"`
+	// RetentionPeriod specifies how long to keep historical data in days.
+	// Defaults to 120 days if not specified.
+	RetentionPeriod int `json:"retention_period" yaml:"retention_period" toml:"retention_period"`
 }
 
 type MonitorType string

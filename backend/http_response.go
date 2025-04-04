@@ -32,9 +32,3 @@ type MonitorHistoricalResponse struct {
 	Latency   int64         `json:"latency"`
 	Timestamp time.Time     `json:"timestamp"`
 }
-
-// SSEEvent represents a Server-Sent Event
-type SSEEvent struct {
-	Event string      `json:"event"`
-	Data  interface{} `json:"data"`
-}

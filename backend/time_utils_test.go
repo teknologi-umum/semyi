@@ -18,11 +18,6 @@ func TestEnsureUTC(t *testing.T) {
 			expected: time.Date(2024, 5, 25, 12, 0, 0, 0, time.UTC),
 		},
 		{
-			name:     "Local time should be converted to UTC",
-			input:    time.Date(2024, 5, 25, 12, 0, 0, 0, time.Local),
-			expected: time.Date(2024, 5, 25, 12, 0, 0, 0, time.UTC),
-		},
-		{
 			name:     "Fixed offset timezone should be converted to UTC",
 			input:    time.Date(2024, 5, 25, 12, 0, 0, 0, time.FixedZone("UTC+7", 7*60*60)),
 			expected: time.Date(2024, 5, 25, 5, 0, 0, 0, time.UTC),
