@@ -21,6 +21,13 @@ type ConfigurationFile struct {
 	RetentionPeriod int `json:"retention_period" yaml:"retention_period" toml:"retention_period"`
 }
 
+// ConfigureDefaults configures the configuration file with default values.
+func (c *ConfigurationFile) ConfigureDefaults() {
+	if c.RetentionPeriod <= 0 {
+		c.RetentionPeriod = 120
+	}
+}
+
 type MonitorType string
 
 const (
@@ -123,7 +130,6 @@ func ReadConfigurationFile(filePath string) (ConfigurationFile, error) {
 		if err != nil {
 			return ConfigurationFile{}, fmt.Errorf("failed to parse configuration file: %w", err)
 		}
-		break
 	case ".yml":
 		fallthrough
 	case ".yaml":
@@ -139,6 +145,8 @@ func ReadConfigurationFile(filePath string) (ConfigurationFile, error) {
 	default:
 		return ConfigurationFile{}, fmt.Errorf("invalid configuration file format")
 	}
+
+	configurationFile.ConfigureDefaults()
 
 	return configurationFile, nil
 }
