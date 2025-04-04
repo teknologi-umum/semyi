@@ -33,10 +33,33 @@ jobs:
         run: pnpm run build
 
   backend:
-    name: Backend
+    name: Backend / ${{ matrix.database.name }}
     runs-on: ubuntu-latest
     container: golang:1.24
     timeout-minutes: 30
+    strategy:
+      matrix:
+        database:
+          - name: "ClickHouse"
+            url: "clickhouse://semyi:password@clickhouse:9000/default"
+          - name: "DuckDB"
+            url: "./test.duckdb"
+    services:
+      clickhouse:
+        # According to the documentation:
+        # If jobs.<job_id>.services.<service_id>.image is assigned an empty string, the service will not start.
+        image: ${{ matrix.database.name == 'ClickHouse' && 'clickhouse/clickhouse-server:latest' || '' }}
+        env:
+          CLICKHOUSE_DB: default
+          CLICKHOUSE_USER: semyi
+          CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+          CLICKHOUSE_PASSWORD: password
+        options: >-
+          --health-cmd "wget --no-verbose --tries=1 --spider http://localhost:8123/ping || exit 1"
+          --health-interval 10s
+          --health-timeout 10s
+          --health-retries 10
+          --health-start-period 30s
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -51,6 +74,8 @@ jobs:
       - name: Test
         run: go test -v -coverprofile=coverage.out -covermode=atomic ./...
         working-directory: ./backend
+        env:
+          DATABASE_URL: ${{ matrix.database.url }}
 
       - uses: codecov/codecov-action@v5
         with:

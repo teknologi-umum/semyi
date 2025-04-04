@@ -125,16 +125,23 @@ func Migrate(db *sql.DB, ctx context.Context, directionUp bool) error {
 	}
 
 	for _, migrationScript := range migrationScripts {
-		_, err = tx.ExecContext(
-			ctx,
-			migrationScript,
-		)
-		if err != nil {
-			if e := tx.Rollback(); e != nil {
-				return fmt.Errorf("failed to rollback transaction: %w (%s)", e, err.Error())
+		// We split everything by `;` and execute each statement in the transaction.
+		for statement := range strings.SplitSeq(migrationScript, ";") {
+			if strings.TrimSpace(statement) == "" {
+				continue
 			}
 
-			return fmt.Errorf("failed to execute migration script: %w", err)
+			_, err = tx.ExecContext(
+				ctx,
+				statement,
+			)
+			if err != nil {
+				if e := tx.Rollback(); e != nil {
+					return fmt.Errorf("failed to rollback transaction: %w (%s)", e, err.Error())
+				}
+
+				return fmt.Errorf("failed to execute migration script: %w", err)
+			}
 		}
 	}
 

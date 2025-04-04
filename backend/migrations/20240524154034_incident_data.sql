@@ -8,10 +8,9 @@ CREATE TABLE IF NOT EXISTS incident_data (
     severity SMALLINT NOT NULL,
     status SMALLINT NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    created_by VARCHAR(255) NOT NULL
+    created_by VARCHAR(255) NOT NULL,
+    PRIMARY KEY (monitor_id, timestamp)
 );
-
-CREATE INDEX IF NOT EXISTS incident_data_incident_id_idx ON incident_data (monitor_id, timestamp, title);
 -- +goose StatementEnd
 
 -- +goose Down
