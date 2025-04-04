@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/getsentry/sentry-go"
 	"github.com/rs/zerolog/log"
 )
 
@@ -34,6 +35,7 @@ func (w *CleanupWorker) Run(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
+			ctx = sentry.SetHubOnContext(ctx, sentry.CurrentHub().Clone())
 			if err := w.Cleanup(ctx); err != nil {
 				log.Error().Err(err).Msg("Failed to run cleanup")
 			}
@@ -43,6 +45,10 @@ func (w *CleanupWorker) Run(ctx context.Context) {
 
 // Cleanup removes historical data older than the retention period
 func (w *CleanupWorker) Cleanup(ctx context.Context) error {
+	span := sentry.StartSpan(ctx, "function", sentry.WithDescription("CleanupWorker.Cleanup"))
+	ctx = span.Context()
+	defer span.Finish()
+
 	// Calculate the cutoff date
 	cutoffDate := time.Now().AddDate(0, 0, -w.retentionPeriod)
 

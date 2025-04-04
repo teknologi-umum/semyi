@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"net/http"
 	"time"
+
+	"github.com/getsentry/sentry-go"
 )
 
 type SlackProvider struct {
@@ -37,6 +39,12 @@ func (s *SlackProvider) Send(ctx context.Context, msg AlertMessage) error {
 	if s.webhookURL == "" {
 		return fmt.Errorf("can't make a Slack webhook request: webhook URL is not set")
 	}
+
+	span := sentry.StartSpan(ctx, "function", sentry.WithDescription("SlackProvider.Send"))
+	span.SetData("semyi.alert.provider", "slack")
+	span.SetData("semyi.monitor.id", msg.MonitorID)
+	ctx = span.Context()
+	defer span.Finish()
 
 	// Create a Slack message using Block Kit format
 	title := "🔴 Service Down"

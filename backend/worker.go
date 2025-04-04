@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/getsentry/sentry-go"
 	probing "github.com/prometheus-community/pro-bing"
 	"github.com/rs/zerolog/log"
 )
@@ -65,11 +66,32 @@ func NewWorker(monitor Monitor, processor *Processor) (*Worker, error) {
 
 func (w *Worker) Run() {
 	for {
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second*time.Duration(w.monitor.Timeout))
+		baseCtx := context.Background()
+		ctx := sentry.SetHubOnContext(baseCtx, sentry.CurrentHub().Clone())
+		ctx, cancel := context.WithTimeout(ctx, time.Second*time.Duration(w.monitor.Timeout))
+
+		span := sentry.StartSpan(ctx, "function", sentry.WithDescription("Worker.Run"))
+		span.SetData("semyi.monitor.id", w.monitor.UniqueID)
+		span.SetData("semyi.monitor.type", w.monitor.Type)
+		ctx = span.Context()
 
 		var response Response
 		var err error
 		var doNotWriteToDatabase = false
+
+		// Add breadcrumb for monitor check
+		sentry.AddBreadcrumb(&sentry.Breadcrumb{
+			Category: "monitor",
+			Message:  fmt.Sprintf("Starting %s check for monitor %s", w.monitor.Type, w.monitor.UniqueID),
+			Level:    sentry.LevelInfo,
+			Data: map[string]interface{}{
+				"monitor_id": w.monitor.UniqueID,
+				"type":       w.monitor.Type,
+				"interval":   w.monitor.Interval,
+				"timeout":    w.monitor.Timeout,
+			},
+		})
+
 		// Make the request
 		switch w.monitor.Type {
 		case MonitorTypeHTTP:
@@ -78,6 +100,7 @@ func (w *Worker) Run() {
 			if err != nil {
 				cancel()
 				log.Error().Err(err).Msg("failed to make http request")
+				sentry.GetHubFromContext(ctx).CaptureException(err)
 			}
 		case MonitorTypePing:
 			log.Debug().Str("monitor_id", w.monitor.UniqueID).Msg("making icmp request")
@@ -85,6 +108,7 @@ func (w *Worker) Run() {
 			if err != nil {
 				cancel()
 				log.Error().Err(err).Msg("failed to make icmp request")
+				sentry.GetHubFromContext(ctx).CaptureException(err)
 			}
 		case MonitorTypePull:
 			log.Debug().Str("monitor_id", w.monitor.UniqueID).Msg("pulling data")
@@ -92,6 +116,7 @@ func (w *Worker) Run() {
 			if err != nil {
 				cancel()
 				log.Error().Err(err).Msg("failed to make pull request")
+				sentry.GetHubFromContext(ctx).CaptureException(err)
 			}
 
 			if response.Success {
@@ -102,11 +127,12 @@ func (w *Worker) Run() {
 		if !doNotWriteToDatabase {
 			// Insert the response to the database
 			log.Debug().Str("monitor_id", w.monitor.UniqueID).Msg("processing response")
-			go w.processor.ProcessResponse(response)
+			go w.processor.ProcessResponse(ctx, response)
 		}
 
 		// Sleep for the interval
 		log.Debug().Str("monitor_id", w.monitor.UniqueID).Msgf("sleeping for %d seconds", w.monitor.Interval)
+		span.Finish()
 		time.Sleep(time.Duration(w.monitor.Interval) * time.Second)
 	}
 }
@@ -159,6 +185,10 @@ func (w *Worker) parseExpectedStatusCode(got int) bool {
 }
 
 func (w *Worker) makeHttpRequest(ctx context.Context) (Response, error) {
+	span := sentry.StartSpan(ctx, "function", sentry.WithDescription("Worker.makeHttpRequest"))
+	ctx = span.Context()
+	defer span.Finish()
+
 	timeStart := time.Now().UnixMilli()
 
 	req, err := http.NewRequestWithContext(ctx, w.monitor.HttpMethod, w.monitor.HttpEndpoint, nil)
@@ -204,6 +234,10 @@ func (w *Worker) makeHttpRequest(ctx context.Context) (Response, error) {
 }
 
 func (w *Worker) makeIcmpRequest(ctx context.Context) (Response, error) {
+	span := sentry.StartSpan(ctx, "function", sentry.WithDescription("Worker.makeIcmpRequest"))
+	ctx = span.Context()
+	defer span.Finish()
+
 	timeStart := time.Now().UnixMilli()
 
 	pinger, err := probing.NewPinger(w.monitor.IcmpHostname)
@@ -257,6 +291,10 @@ func (w *Worker) makeIcmpRequest(ctx context.Context) (Response, error) {
 // It will search for the latest historical data for the monitor, if there are no data
 // for a certain period, it will set the status to failure.
 func (w *Worker) backfillPullHealthcheck(ctx context.Context) (Response, error) {
+	span := sentry.StartSpan(ctx, "function", sentry.WithDescription("Worker.backfillPullHealthcheck"))
+	ctx = span.Context()
+	defer span.Finish()
+
 	historical, err := w.historicalReader.ReadRawLatest(ctx, w.monitor.UniqueID)
 	if err != nil {
 		return Response{}, fmt.Errorf("failed to read historical data: %w", err)

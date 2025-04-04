@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"fmt"
 	"time"
+
+	"github.com/getsentry/sentry-go"
 )
 
 type IncidentWriter struct {
@@ -18,6 +20,13 @@ func NewIncidentWriter(db *sql.DB) *IncidentWriter {
 }
 
 func (w *IncidentWriter) Write(ctx context.Context, incident Incident) error {
+	span := sentry.StartSpan(ctx, "function", sentry.WithDescription("IncidentWriter.Write"))
+	span.SetData("semyi.monitor.id", incident.MonitorID)
+	span.SetData("semyi.incident.severity", incident.Severity)
+	span.SetData("semyi.incident.status", incident.Status)
+	ctx = span.Context()
+	defer span.Finish()
+
 	conn, err := w.db.Conn(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get database connection: %w", err)

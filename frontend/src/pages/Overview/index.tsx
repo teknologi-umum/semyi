@@ -1,17 +1,17 @@
 import DarkModeToggle from "@/components/DarkModeToggle";
 import EndpointStatusCard from "@/components/EndpointStatusCard";
-import Notice from "@/components/Notice";
 import { BASE_URL } from "@/constants";
-import type { Response, Snapshot } from "@/types";
+import type { Snapshot } from "@/types";
 import { fetchAllStaticSnapshots } from "@/utils/fetcher";
 import config from "@config";
+import * as Sentry from "@sentry/solid";
 import { fromEvent, map } from "rxjs";
-import { For, Match, Switch, createResource, onCleanup, onMount } from "solid-js";
+import { For, createResource, onCleanup, onMount } from "solid-js";
 import styles from "./styles.module.css";
 
 export default function OverviewPage() {
   const abortController = new AbortController();
-  const [staticSnapshot, { refetch }] = createResource(() =>
+  const [staticSnapshot] = createResource(() =>
     fetchAllStaticSnapshots(
       config.monitors.map((c) => c.unique_id),
       "raw",
@@ -20,7 +20,26 @@ export default function OverviewPage() {
   );
   const source = new EventSource(`${BASE_URL}/api/overview`);
   const snapshotStream$ = fromEvent<MessageEvent<string>>(source, "message").pipe(
-    map((event) => JSON.parse(event.data) as Snapshot),
+    map((event) => {
+      return Sentry.startSpan({
+        name: "overview.stream_message",
+        op: "function",
+        attributes: {
+          "semyi.page": "overview",
+        },
+      }, (span) => {
+        try {
+          const data = JSON.parse(event.data) as Snapshot;
+          return data;
+        } catch (err) {
+          span.setStatus({
+            code: 2,
+            message: "parse_error",
+          });
+          throw err;
+        }
+      });
+    })
   );
 
   onMount(() => {

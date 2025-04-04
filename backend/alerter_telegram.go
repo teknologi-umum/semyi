@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"net/http"
 	"time"
+
+	"github.com/getsentry/sentry-go"
 )
 
 type TelegramProvider struct {
@@ -40,6 +42,12 @@ func (t *TelegramProvider) Send(ctx context.Context, msg AlertMessage) error {
 	if t.url == "" || t.chatID == "" {
 		return fmt.Errorf("can't make a telegram alert request: some config is not set")
 	}
+
+	span := sentry.StartSpan(ctx, "function", sentry.WithDescription("TelegramProvider.Send"))
+	span.SetData("semyi.alert.provider", "telegram")
+	span.SetData("semyi.monitor.id", msg.MonitorID)
+	ctx = span.Context()
+	defer span.Finish()
 
 	// Perhaps we can use a template file instead.
 	title := "🔴 Down"

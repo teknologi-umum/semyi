@@ -23,6 +23,7 @@
   "dependencies": {
     "@fontsource/ibm-plex-sans": "^5.2.5",
     "@fontsource/libre-franklin": "^5.2.5",
+    "@sentry/solid": "^9.11.0",
     "@solidjs/router": "^0.15.3",
     "rxjs": "^7.8.2",
     "solid-js": "^1.9.5"

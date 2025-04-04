@@ -7,6 +7,7 @@ import { LeftArrowIcon } from "@/icons";
 import type { Monitor, Response, Snapshot } from "@/types";
 import { fetchSingleStaticSnapshot } from "@/utils/fetcher";
 import config from "@config";
+import * as Sentry from "@sentry/solid";
 import { A, Navigate, useSearchParams } from "@solidjs/router";
 import { fromEvent, map } from "rxjs";
 import { Match, Switch, createResource, onMount } from "solid-js";
@@ -34,7 +35,27 @@ export default function DetailPage() {
 
   const source = new EventSource(`${BASE_URL}/api/by?ids=${endpoint.unique_id}`);
   const snapshotStream$ = fromEvent<MessageEvent<string>>(source, "message").pipe(
-    map((event) => JSON.parse(event.data) as Snapshot),
+    map((event) => {
+      return Sentry.startSpan({
+        name: "detail.stream_message",
+        op: "function",
+        attributes: {
+          "semyi.page": "detail",
+          "semyi.monitor.id": endpoint.unique_id,
+        },
+      }, (span) => {
+        try {
+          const data = JSON.parse(event.data) as Snapshot;
+          return data;
+        } catch (err) {
+          span.setStatus({
+            code: 2,
+            message: "parse_error",
+          });
+          throw err;
+        }
+      });
+    })
   );
 
   onMount(() => {
