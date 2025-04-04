@@ -13,9 +13,57 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// AlertingConfig holds configuration for all alert providers
+type AlertingConfig struct {
+	// Telegram configuration for sending alerts via Telegram
+	Telegram TelegramConfig `json:"telegram" yaml:"telegram" toml:"telegram"`
+	// Discord configuration for sending alerts via Discord
+	Discord DiscordConfig `json:"discord" yaml:"discord" toml:"discord"`
+	// HTTP configuration for sending alerts via HTTP webhook
+	HTTP HTTPConfig `json:"http" yaml:"http" toml:"http"`
+	// Slack configuration for sending alerts via Slack
+	Slack SlackConfig `json:"slack" yaml:"slack" toml:"slack"`
+}
+
+// TelegramConfig holds configuration for Telegram alert provider
+type TelegramConfig struct {
+	// Enabled specifies whether the Telegram alert provider is enabled
+	Enabled bool `json:"enabled" yaml:"enabled" toml:"enabled"`
+	// URL specifies the Telegram Bot API URL
+	URL string `json:"url" yaml:"url" toml:"url"`
+	// ChatID specifies the Telegram chat ID to send alerts to
+	ChatID string `json:"chat_id" yaml:"chat_id" toml:"chat_id"`
+}
+
+// DiscordConfig holds configuration for Discord alert provider
+type DiscordConfig struct {
+	// Enabled specifies whether the Discord alert provider is enabled
+	Enabled bool `json:"enabled" yaml:"enabled" toml:"enabled"`
+	// WebhookURL specifies the Discord webhook URL
+	WebhookURL string `json:"webhook_url" yaml:"webhook_url" toml:"webhook_url"`
+}
+
+// HTTPConfig holds configuration for HTTP alert provider
+type HTTPConfig struct {
+	// Enabled specifies whether the HTTP alert provider is enabled
+	Enabled bool `json:"enabled" yaml:"enabled" toml:"enabled"`
+	// WebhookURL specifies the HTTP webhook URL
+	WebhookURL string `json:"webhook_url" yaml:"webhook_url" toml:"webhook_url"`
+}
+
+// SlackConfig holds configuration for Slack alert provider
+type SlackConfig struct {
+	// Enabled specifies whether the Slack alert provider is enabled
+	Enabled bool `json:"enabled" yaml:"enabled" toml:"enabled"`
+	// WebhookURL specifies the Slack webhook URL
+	WebhookURL string `json:"webhook_url" yaml:"webhook_url" toml:"webhook_url"`
+}
+
 type ConfigurationFile struct {
 	Monitors []Monitor `json:"monitors"`
 	Webhook  Webhook   `json:"webhook"`
+	// Alerting specifies the configuration for all alert providers
+	Alerting AlertingConfig `json:"alerting" yaml:"alerting" toml:"alerting"`
 	// RetentionPeriod specifies how long to keep historical data in days.
 	// Defaults to 120 days if not specified.
 	RetentionPeriod int `json:"retention_period" yaml:"retention_period" toml:"retention_period"`
