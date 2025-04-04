@@ -11,8 +11,6 @@ CREATE TABLE IF NOT EXISTS incident_data (
     created_by VARCHAR(255) NOT NULL,
     PRIMARY KEY (monitor_id, timestamp)
 );
-
-CREATE INDEX IF NOT EXISTS incident_data_incident_id_idx ON incident_data (monitor_id, timestamp, title);
 -- +goose StatementEnd
 
 -- +goose Down
