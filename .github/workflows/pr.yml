@@ -51,6 +51,7 @@ jobs:
       - name: Test
         run: go test -v -coverprofile=coverage.out -covermode=atomic ./...
 
-      - uses: codecov/codecov-action@v3
+      - uses: codecov/codecov-action@v5
         with:
           flags: backend
+          token: ${{ secrets.CODECOV_TOKEN }}
