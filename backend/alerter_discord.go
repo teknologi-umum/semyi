@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"net/http"
 	"time"
+
+	"github.com/getsentry/sentry-go"
 )
 
 type DiscordProvider struct {
@@ -36,6 +38,12 @@ func (d *DiscordProvider) Send(ctx context.Context, msg AlertMessage) error {
 	if d.webhookURL == "" {
 		return fmt.Errorf("can't make a discord alert request: webhook URL is not set")
 	}
+
+	span := sentry.StartSpan(ctx, "function", sentry.WithDescription("DiscordProvider.Send"))
+	span.SetData("semyi.alert.provider", "discord")
+	span.SetData("semyi.monitor.id", msg.MonitorID)
+	ctx = span.Context()
+	defer span.Finish()
 
 	// Create a Discord embed message
 	title := "🔴 Service Down"

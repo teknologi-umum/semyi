@@ -14,6 +14,9 @@ importers:
       '@fontsource/libre-franklin':
         specifier: ^5.2.5
         version: 5.2.5
+      '@sentry/solid':
+        specifier: ^9.11.0
+        version: 9.11.0(@solidjs/router@0.15.3(solid-js@1.9.5))(solid-js@1.9.5)
       '@solidjs/router':
         specifier: ^0.15.3
         version: 0.15.3(solid-js@1.9.5)
@@ -473,6 +476,40 @@ packages:
     resolution: {integrity: sha512-yAkUOkIKZlK5dl7u6dg897doBgLXmUHhIINM2c+sND3DZwnrdQkkSiDh7N75Ll4mM4dxSkYfXqU9fW3lLkMFug==}
     cpu: [x64]
     os: [win32]
+
+  '@sentry-internal/browser-utils@9.11.0':
+    resolution: {integrity: sha512-XS71kRf7lw5St/Jc9G2Viy1cKgqGoPHqUAykXEtFt38JVXdf1TY/dSbKv/PAgNqMvC1xvdTsN0HF/81o7DNUEA==}
+    engines: {node: '>=18'}
+
+  '@sentry-internal/feedback@9.11.0':
+    resolution: {integrity: sha512-50KiRmrF1Ldr+KoRawqcCYVk7TAVP8K/I81Jk9YWwlp1+Pu1ArpYDmTNCLXTgoyiyO38aHefKGZJX6AKFuSsUQ==}
+    engines: {node: '>=18'}
+
+  '@sentry-internal/replay-canvas@9.11.0':
+    resolution: {integrity: sha512-ZcRg8TWfF0ucjK2i+4TY/blRNJ7YKrgMpx19pFj6eCOJ1K8geSkAFPIfDHcQEwIU1ZTN+HiCwx0JvTI9YZxjfg==}
+    engines: {node: '>=18'}
+
+  '@sentry-internal/replay@9.11.0':
+    resolution: {integrity: sha512-0k24h58O/2VQw1dwT/zQiWvUzLNQxpxbrVN/MYPT7czSEhI+1bX8fxMHXZORl2JqhetImMXzxH3XkuHQPEqQMg==}
+    engines: {node: '>=18'}
+
+  '@sentry/browser@9.11.0':
+    resolution: {integrity: sha512-DSDj8wQJoiLqqOcntl+7phjd8l8KN9A0vaV7mZNHWbrHU3MVwXqTyLyERRLC6wi0t7F5kqczqa3xLmKjK/fMZg==}
+    engines: {node: '>=18'}
+
+  '@sentry/core@9.11.0':
+    resolution: {integrity: sha512-qfb4ahGZubbrNh1MnbEqyHFp87rIwQIZapyQLCaYpudXrP1biEpLOV3mMDvDJWCdX460hoOwQ3SkwipV3We/7w==}
+    engines: {node: '>=18'}
+
+  '@sentry/solid@9.11.0':
+    resolution: {integrity: sha512-1KkSuiTGRtpST3EPRGzuvFBqeL+12aGU9LdqLJ19iHXm537n4PLaBNGSN5Ywr3YToUL/kzWFB60Xxjy7ZSo+Uw==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      '@solidjs/router': ^0.13.4
+      solid-js: ^1.8.4
+    peerDependenciesMeta:
+      '@solidjs/router':
+        optional: true
 
   '@solidjs/router@0.15.3':
     resolution: {integrity: sha512-iEbW8UKok2Oio7o6Y4VTzLj+KFCmQPGEpm1fS3xixwFBdclFVBvaQVeibl1jys4cujfAK5Kn6+uG2uBm3lxOMw==}
@@ -1079,6 +1116,42 @@ snapshots:
 
   '@rollup/rollup-win32-x64-msvc@4.39.0':
     optional: true
+
+  '@sentry-internal/browser-utils@9.11.0':
+    dependencies:
+      '@sentry/core': 9.11.0
+
+  '@sentry-internal/feedback@9.11.0':
+    dependencies:
+      '@sentry/core': 9.11.0
+
+  '@sentry-internal/replay-canvas@9.11.0':
+    dependencies:
+      '@sentry-internal/replay': 9.11.0
+      '@sentry/core': 9.11.0
+
+  '@sentry-internal/replay@9.11.0':
+    dependencies:
+      '@sentry-internal/browser-utils': 9.11.0
+      '@sentry/core': 9.11.0
+
+  '@sentry/browser@9.11.0':
+    dependencies:
+      '@sentry-internal/browser-utils': 9.11.0
+      '@sentry-internal/feedback': 9.11.0
+      '@sentry-internal/replay': 9.11.0
+      '@sentry-internal/replay-canvas': 9.11.0
+      '@sentry/core': 9.11.0
+
+  '@sentry/core@9.11.0': {}
+
+  '@sentry/solid@9.11.0(@solidjs/router@0.15.3(solid-js@1.9.5))(solid-js@1.9.5)':
+    dependencies:
+      '@sentry/browser': 9.11.0
+      '@sentry/core': 9.11.0
+      solid-js: 1.9.5
+    optionalDependencies:
+      '@solidjs/router': 0.15.3(solid-js@1.9.5)
 
   '@solidjs/router@0.15.3(solid-js@1.9.5)':
     dependencies:

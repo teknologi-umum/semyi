@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/getsentry/sentry-go"
 	"github.com/rs/zerolog/log"
 )
 
@@ -18,14 +19,16 @@ func NewAggregateWorker(monitorIds []string, reader *MonitorHistoricalReader, wr
 }
 
 func (w *AggregateWorker) RunHourlyAggregate() {
+	ctx := sentry.SetHubOnContext(context.Background(), sentry.CurrentHub().Clone())
 	for {
 		log.Debug().Msg("running hourly aggregate")
 		var startTime = time.Now()
 
 		for _, monitorId := range w.monitorIds {
-			historicalData, err := w.reader.ReadRawHistorical(context.TODO(), monitorId)
+			historicalData, err := w.reader.ReadRawHistorical(ctx, monitorId)
 			if err != nil {
 				log.Error().Err(err).Msgf("failed to read raw historical data for monitor %s", monitorId)
+				sentry.GetHubFromContext(ctx).CaptureException(err)
 				continue
 			}
 
@@ -58,7 +61,7 @@ func (w *AggregateWorker) RunHourlyAggregate() {
 			var averageLatency = totalLatency / int64(len(lastHourData))
 			var averageStatus = MonitorStatus(totalStatus / int64(len(lastHourData)))
 
-			err = w.writer.WriteHourly(context.TODO(), MonitorHistorical{
+			err = w.writer.WriteHourly(ctx, MonitorHistorical{
 				MonitorID: monitorId,
 				Status:    averageStatus,
 				Latency:   averageLatency,
@@ -66,6 +69,7 @@ func (w *AggregateWorker) RunHourlyAggregate() {
 			})
 			if err != nil {
 				log.Error().Err(err).Msg("failed to write hourly aggregate data")
+				sentry.GetHubFromContext(ctx).CaptureException(err)
 				continue
 			}
 		}
@@ -80,14 +84,16 @@ func (w *AggregateWorker) RunHourlyAggregate() {
 }
 
 func (w *AggregateWorker) RunDailyAggregate() {
+	ctx := sentry.SetHubOnContext(context.Background(), sentry.CurrentHub().Clone())
 	for {
 		log.Debug().Msg("running daily aggregate")
 		var startTime = time.Now()
 
 		for _, monitorId := range w.monitorIds {
-			historicalData, err := w.reader.ReadRawHistorical(context.TODO(), monitorId)
+			historicalData, err := w.reader.ReadRawHistorical(ctx, monitorId)
 			if err != nil {
 				log.Error().Err(err).Msgf("failed to read raw historical data for monitor %s", monitorId)
+				sentry.GetHubFromContext(ctx).CaptureException(err)
 				continue
 			}
 
@@ -117,7 +123,7 @@ func (w *AggregateWorker) RunDailyAggregate() {
 			var averageLatency = totalLatency / int64(len(lastHourData))
 			var averageStatus = MonitorStatus(totalStatus / int64(len(lastHourData)))
 
-			err = w.writer.WriteDaily(context.TODO(), MonitorHistorical{
+			err = w.writer.WriteDaily(ctx, MonitorHistorical{
 				MonitorID: monitorId,
 				Status:    averageStatus,
 				Latency:   averageLatency,
@@ -125,6 +131,7 @@ func (w *AggregateWorker) RunDailyAggregate() {
 			})
 			if err != nil {
 				log.Error().Err(err).Msg("failed to write daily aggregate data")
+				sentry.GetHubFromContext(ctx).CaptureException(err)
 				continue
 			}
 		}

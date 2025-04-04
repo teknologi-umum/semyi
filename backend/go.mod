@@ -7,6 +7,8 @@ toolchain go1.24.1
 require (
 	github.com/BurntSushi/toml v1.3.2
 	github.com/ClickHouse/clickhouse-go/v2 v2.34.0
+	github.com/aldy505/sentry-integration v0.0.0-20241028054403-425f0b4c2301
+	github.com/getsentry/sentry-go v0.31.1
 	github.com/go-chi/chi/v5 v5.0.12
 	github.com/google/uuid v1.6.0
 	github.com/marcboeker/go-duckdb/v2 v2.1.0
@@ -51,6 +53,7 @@ require (
 	golang.org/x/net v0.35.0 // indirect
 	golang.org/x/sync v0.11.0 // indirect
 	golang.org/x/sys v0.30.0 // indirect
+	golang.org/x/text v0.22.0 // indirect
 	golang.org/x/tools v0.30.0 // indirect
 	golang.org/x/xerrors v0.0.0-20240903120638-7835f813f4da // indirect
 )

@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"net/http"
 	"time"
+
+	"github.com/getsentry/sentry-go"
 )
 
 type HTTPProvider struct {
@@ -37,6 +39,12 @@ func (h *HTTPProvider) Send(ctx context.Context, msg AlertMessage) error {
 	if h.webhookURL == "" {
 		return fmt.Errorf("can't make a HTTP webhook request: webhook URL is not set")
 	}
+
+	span := sentry.StartSpan(ctx, "function", sentry.WithDescription("HTTPProvider.Send"))
+	span.SetData("semyi.alert.provider", "http")
+	span.SetData("semyi.monitor.id", msg.MonitorID)
+	ctx = span.Context()
+	defer span.Finish()
 
 	// Format the message as a JSON payload
 	payload := map[string]interface{}{

@@ -1,15 +1,16 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net"
 	"net/http"
 	"slices"
-	"strconv"
 	"strings"
 	"time"
 
+	"github.com/getsentry/sentry-go"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/rs/cors"
@@ -23,6 +24,7 @@ type Server struct {
 	centralBroker    *Broker[MonitorHistorical]
 	incidentWriter   *IncidentWriter
 	monitors         []Monitor
+	processor        *Processor
 
 	apiKey string
 }
@@ -49,6 +51,7 @@ func NewServer(config ServerConfig) *http.Server {
 		centralBroker:    config.CentralBroker,
 		monitors:         config.MonitorList,
 		incidentWriter:   config.IncidentWriter,
+		processor:        nil,
 
 		apiKey: config.ApiKey,
 	}
@@ -90,6 +93,19 @@ func NewServer(config ServerConfig) *http.Server {
 
 func (s *Server) snapshotOverview(w http.ResponseWriter, r *http.Request) {
 	requestId := middleware.GetReqID(r.Context())
+	ctx := r.Context()
+
+	// Add breadcrumb for request
+	sentry.AddBreadcrumb(&sentry.Breadcrumb{
+		Category: "http",
+		Message:  "Handling snapshot overview request",
+		Level:    sentry.LevelInfo,
+		Data: map[string]interface{}{
+			"request_id": requestId,
+			"path":       r.URL.Path,
+		},
+	})
+
 	flusher, ok := w.(http.Flusher)
 	if !ok {
 		w.Header().Set("Content-Type", "application/json")
@@ -109,30 +125,34 @@ func (s *Server) snapshotOverview(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusInternalServerError)
 		_ = json.NewEncoder(w).Encode(HttpCommonError{Error: fmt.Sprintf("failed to subscribe to endpoints: %s", err)})
+		sentry.GetHubFromContext(ctx).CaptureException(err)
 		return
 	}
 
 	_, err = w.Write([]byte("data: {\"type\": \"hello\"}\n\n"))
 	if err != nil {
 		log.Error().Str("request_id", requestId).Str("component", "snapshotOverview").Err(err).Msg("failed to write data")
+		sentry.GetHubFromContext(ctx).CaptureException(err)
 	}
 	flusher.Flush()
 
 	for {
 		select {
-		case <-r.Context().Done():
+		case <-ctx.Done():
 			log.Debug().Str("request_id", requestId).Str("component", "snapshotOverview").Msg("context done, closing")
 			return
-		case data := <-subscriber.Listen(r.Context()):
+		case data := <-subscriber.Listen(ctx):
 			log.Debug().Str("request_id", requestId).Str("component", "snapshotOverview").Msg("received data from endpoint")
 			marshaled, err := json.Marshal(data)
 			if err != nil {
 				log.Error().Str("request_id", requestId).Str("component", "snapshotOverview").Err(err).Msg("failed to marshal data")
+				sentry.GetHubFromContext(ctx).CaptureException(err)
 			}
 
 			_, err = w.Write([]byte("data: " + string(marshaled) + "\n\n"))
 			if err != nil {
 				log.Error().Str("request_id", requestId).Str("component", "snapshotOverview").Err(err).Msg("failed to write data")
+				sentry.GetHubFromContext(ctx).CaptureException(err)
 			}
 
 			flusher.Flush()
@@ -144,6 +164,19 @@ func (s *Server) snapshotOverview(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) snapshotBy(w http.ResponseWriter, r *http.Request) {
 	requestId := middleware.GetReqID(r.Context())
+	ctx := r.Context()
+
+	// Add breadcrumb for request
+	sentry.AddBreadcrumb(&sentry.Breadcrumb{
+		Category: "http",
+		Message:  "Handling snapshot by request",
+		Level:    sentry.LevelInfo,
+		Data: map[string]interface{}{
+			"request_id": requestId,
+			"path":       r.URL.Path,
+		},
+	})
+
 	flusher, ok := w.(http.Flusher)
 	if !ok {
 		w.Header().Set("Content-Type", "application/json")
@@ -182,30 +215,34 @@ func (s *Server) snapshotBy(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusInternalServerError)
 		_ = json.NewEncoder(w).Encode(HttpCommonError{Error: fmt.Sprintf("failed to subscribe to endpoints: %s", err)})
+		sentry.GetHubFromContext(ctx).CaptureException(err)
 		return
 	}
 
 	_, err = w.Write([]byte("data: {\"type\": \"hello\"}\n\n"))
 	if err != nil {
 		log.Error().Str("wanted_monitor_ids", ids).Str("request_id", requestId).Str("component", "snapshotBy").Err(err).Msg("failed to write data")
+		sentry.GetHubFromContext(ctx).CaptureException(err)
 	}
 	flusher.Flush()
 
 	for {
 		select {
-		case <-r.Context().Done():
+		case <-ctx.Done():
 			log.Debug().Str("wanted_monitor_ids", ids).Str("request_id", requestId).Str("component", "snapshotBy").Msg("context done, closing")
 			return
-		case data := <-sub.Listen(r.Context()):
+		case data := <-sub.Listen(ctx):
 			log.Debug().Str("wanted_monitor_ids", ids).Str("request_id", requestId).Str("component", "snapshotBy").Msg("received data from endpoint")
 			marshaled, err := json.Marshal(data)
 			if err != nil {
 				log.Error().Str("wanted_monitor_ids", ids).Str("request_id", requestId).Str("component", "snapshotBy").Err(err).Msg("failed to marshal data")
+				sentry.GetHubFromContext(ctx).CaptureException(err)
 			}
 
 			_, err = w.Write([]byte("data: " + string(marshaled) + "\n\n"))
 			if err != nil {
 				log.Error().Str("wanted_monitor_ids", ids).Str("request_id", requestId).Str("component", "snapshotBy").Err(err).Msg("failed to write data")
+				sentry.GetHubFromContext(ctx).CaptureException(err)
 			}
 
 			flusher.Flush()
@@ -217,6 +254,19 @@ func (s *Server) snapshotBy(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) staticSnapshot(w http.ResponseWriter, r *http.Request) {
 	monitorId := r.URL.Query().Get("id")
+	ctx := r.Context()
+
+	// Add breadcrumb for request
+	sentry.AddBreadcrumb(&sentry.Breadcrumb{
+		Category: "http",
+		Message:  "Handling static snapshot request",
+		Level:    sentry.LevelInfo,
+		Data: map[string]interface{}{
+			"monitor_id": monitorId,
+			"path":       r.URL.Path,
+		},
+	})
+
 	if monitorId == "" {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusBadRequest)
@@ -248,27 +298,30 @@ func (s *Server) staticSnapshot(w http.ResponseWriter, r *http.Request) {
 	var monitorHistorical []MonitorHistorical
 	switch interval {
 	case "raw":
-		monitorHistorical, err = s.historicalReader.ReadRawHistorical(r.Context(), monitorId)
+		monitorHistorical, err = s.historicalReader.ReadRawHistorical(ctx, monitorId)
 		if err != nil {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusInternalServerError)
 			_ = json.NewEncoder(w).Encode(HttpCommonError{Error: fmt.Sprintf("failed to read raw historical data: %s", err)})
+			sentry.GetHubFromContext(ctx).CaptureException(err)
 			return
 		}
 	case "hourly":
-		monitorHistorical, err = s.historicalReader.ReadHourlyHistorical(r.Context(), monitorId)
+		monitorHistorical, err = s.historicalReader.ReadHourlyHistorical(ctx, monitorId)
 		if err != nil {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusInternalServerError)
 			_ = json.NewEncoder(w).Encode(HttpCommonError{Error: fmt.Sprintf("failed to read hourly historical data: %s", err)})
+			sentry.GetHubFromContext(ctx).CaptureException(err)
 			return
 		}
 	case "daily":
-		monitorHistorical, err = s.historicalReader.ReadDailyHistorical(r.Context(), monitorId)
+		monitorHistorical, err = s.historicalReader.ReadDailyHistorical(ctx, monitorId)
 		if err != nil {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusInternalServerError)
 			_ = json.NewEncoder(w).Encode(HttpCommonError{Error: fmt.Sprintf("failed to read daily historical data: %s", err)})
+			sentry.GetHubFromContext(ctx).CaptureException(err)
 			return
 		}
 	}
@@ -290,43 +343,51 @@ func (s *Server) staticSnapshot(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) submitIncindent(w http.ResponseWriter, r *http.Request) {
-	apiKey := r.Header.Get("x-api-key")
-	if apiKey == "" {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusUnauthorized)
-		_ = json.NewEncoder(w).Encode(HttpCommonError{Error: "api key is required"})
-		return
-	} else {
+	ctx := r.Context()
+
+	// Add breadcrumb for request
+	sentry.AddBreadcrumb(&sentry.Breadcrumb{
+		Category: "http",
+		Message:  "Handling incident submission",
+		Level:    sentry.LevelInfo,
+		Data: map[string]interface{}{
+			"path": r.URL.Path,
+		},
+	})
+
+	if s.apiKey != "" {
+		apiKey := r.Header.Get("X-API-Key")
+		if apiKey == "" {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusUnauthorized)
+			_ = json.NewEncoder(w).Encode(HttpCommonError{Error: "X-API-Key is required"})
+			return
+		}
+
 		if apiKey != s.apiKey {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusUnauthorized)
-			_ = json.NewEncoder(w).Encode(HttpCommonError{Error: "api key is invalid"})
+			_ = json.NewEncoder(w).Encode(HttpCommonError{Error: "invalid X-API-Key"})
 			return
 		}
 	}
 
-	decoder := json.NewDecoder(r.Body)
-	var body Incident
-	if err := decoder.Decode(&body); err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusInternalServerError)
-		_ = json.NewEncoder(w).Encode(HttpCommonError{Error: err.Error()})
-		return
-	}
-	defer r.Body.Close()
-
-	if err := body.Validate(); err != nil {
+	var incident Incident
+	err := json.NewDecoder(r.Body).Decode(&incident)
+	if err != nil {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusBadRequest)
-		_ = json.NewEncoder(w).Encode(HttpCommonError{Error: err.Error()})
+		_ = json.NewEncoder(w).Encode(HttpCommonError{Error: fmt.Sprintf("failed to decode request body: %s", err)})
+		sentry.GetHubFromContext(ctx).CaptureException(err)
 		return
 	}
 
-	err := s.incidentWriter.Write(r.Context(), body)
+	err = s.incidentWriter.Write(ctx, incident)
 	if err != nil {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusInternalServerError)
-		_ = json.NewEncoder(w).Encode(HttpCommonError{Error: err.Error()})
+		_ = json.NewEncoder(w).Encode(HttpCommonError{Error: fmt.Sprintf("failed to write incident: %s", err)})
+		sentry.GetHubFromContext(ctx).CaptureException(err)
 		return
 	}
 
@@ -336,104 +397,66 @@ func (s *Server) submitIncindent(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) pushHealthcheck(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		_ = json.NewEncoder(w).Encode(HttpCommonError{Error: "Method not allowed"})
-		return
-	}
+	monitorId := chi.URLParam(r, "monitor_id")
 
-	// Get monitor ID from URL path
-	monitorID := chi.URLParam(r, "monitor_id")
-	if monitorID == "" {
+	// Add breadcrumb for request
+	sentry.AddBreadcrumb(&sentry.Breadcrumb{
+		Category: "http",
+		Message:  "Handling push healthcheck",
+		Level:    sentry.LevelInfo,
+		Data: map[string]interface{}{
+			"monitor_id": monitorId,
+			"path":       r.URL.Path,
+		},
+	})
+
+	if monitorId == "" {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusBadRequest)
 		_ = json.NewEncoder(w).Encode(HttpCommonError{Error: "monitor_id is required"})
 		return
 	}
 
-	// Trim monitorID
-	monitorID = strings.TrimSpace(monitorID)
-
-	// Validate monitor ID exists
-	if !slices.Contains(monitorIds, monitorID) {
+	if !slices.Contains(monitorIds, monitorId) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusBadRequest)
-		_ = json.NewEncoder(w).Encode(HttpCommonError{Error: "Invalid monitor_id"})
+		_ = json.NewEncoder(w).Encode(HttpCommonError{Error: "monitor_id is not in the list of monitors"})
 		return
 	}
 
-	// Get query parameters
-	status := r.URL.Query().Get("status")
-	pingStr := r.URL.Query().Get("ping")
-
-	// Convert ping to latency (in milliseconds)
-	var latency int64
-	if pingStr != "" {
-		ping, err := strconv.ParseFloat(pingStr, 64)
-		if err != nil {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusBadRequest)
-			_ = json.NewEncoder(w).Encode(HttpCommonError{Error: "Invalid ping value"})
-			return
+	var monitor Monitor
+	for _, m := range s.monitors {
+		if m.UniqueID == monitorId {
+			monitor = m
+			break
 		}
-		latency = int64(ping * 1000) // Convert seconds to milliseconds
 	}
 
-	// Convert status string to MonitorStatus
-	var monitorStatus MonitorStatus
-	switch strings.TrimSpace(strings.ToLower(status)) {
-	case "up":
-		monitorStatus = MonitorStatusSuccess
-	case "down":
-		monitorStatus = MonitorStatusFailure
-	case "degraded":
-		monitorStatus = MonitorStatusDegradedPerformance
-	case "under_maintenance":
-		monitorStatus = MonitorStatusUnderMaintenance
-	case "limited":
-		monitorStatus = MonitorStatusLimitedAvailability
-	default:
+	if monitor.UniqueID == "" {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusBadRequest)
-		_ = json.NewEncoder(w).Encode(HttpCommonError{Error: "Invalid status value"})
+		_ = json.NewEncoder(w).Encode(HttpCommonError{Error: "monitor not found"})
 		return
 	}
 
-	// Create a new monitor historical record
-	historical := MonitorHistorical{
-		MonitorID: monitorID,
-		Status:    monitorStatus,
-		Latency:   latency,
-		Timestamp: time.Now().UTC(),
-	}
-
-	// Validate the historical record
-	if valid, err := historical.Validate(); !valid || err != nil {
+	if monitor.Type != MonitorTypePull {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusBadRequest)
-		_ = json.NewEncoder(w).Encode(HttpCommonError{Error: "Invalid healthcheck data"})
+		_ = json.NewEncoder(w).Encode(HttpCommonError{Error: "monitor is not a pull monitor"})
 		return
 	}
 
-	// Write to storage
-	if err := s.historicalWriter.Write(r.Context(), historical); err != nil {
-		log.Error().Err(err).Msg("Failed to write healthcheck result")
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusInternalServerError)
-		_ = json.NewEncoder(w).Encode(HttpCommonError{Error: "Failed to write healthcheck result"})
-		return
+	response := Response{
+		Success:         true,
+		StatusCode:      200,
+		RequestDuration: 0,
+		Timestamp:       time.Now().UTC(),
+		Monitor:         monitor,
 	}
 
-	// Publish to broker for real-time updates
-	s.centralBroker.Publish(monitorID, &BrokerMessage[MonitorHistorical]{
-		Header: map[string]string{
-			"interval": "raw",
-		},
-		Body: historical,
-	})
+	go s.processor.ProcessResponse(context.WithoutCancel(r.Context()), response)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	_ = json.NewEncoder(w).Encode(HttpCommonSuccess{Message: "OK"})
+	_ = json.NewEncoder(w).Encode(HttpCommonSuccess{Message: "success"})
 }

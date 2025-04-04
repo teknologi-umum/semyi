@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/getsentry/sentry-go"
 	"github.com/rs/zerolog/log"
 )
 
@@ -18,6 +19,12 @@ func NewIncidentDataReader(db *sql.DB) *IncidentDataReader {
 }
 
 func (r *IncidentDataReader) ReadRelatedIncidents(ctx context.Context, incidentTitle string, monitorID string) ([]Incident, error) {
+	span := sentry.StartSpan(ctx, "function", sentry.WithDescription("IncidentDataReader.ReadRelatedIncidents"))
+	span.SetData("semyi.monitor.id", monitorID)
+	span.SetData("semyi.incident.title", incidentTitle)
+	ctx = span.Context()
+	defer span.Finish()
+
 	dbCon, err := r.db.Conn(ctx)
 	if err != nil {
 		return nil, err
@@ -54,6 +61,13 @@ func (r *IncidentDataReader) ReadRelatedIncidents(ctx context.Context, incidentT
 }
 
 func (r *IncidentDataReader) ReadIncidentByTimestamp(ctx context.Context, incidentTitle string, monitorID string, timestamp time.Time) (Incident, error) {
+	span := sentry.StartSpan(ctx, "function", sentry.WithDescription("IncidentDataReader.ReadIncidentByTimestamp"))
+	span.SetData("semyi.monitor.id", monitorID)
+	span.SetData("semyi.incident.title", incidentTitle)
+	span.SetData("semyi.incident.timestamp", timestamp)
+	ctx = span.Context()
+	defer span.Finish()
+
 	dbCon, err := r.db.Conn(ctx)
 	if err != nil {
 		return Incident{}, err

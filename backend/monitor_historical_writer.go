@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/getsentry/sentry-go"
 	"github.com/rs/zerolog/log"
 )
 
@@ -18,6 +19,12 @@ func NewMonitorHistoricalWriter(db *sql.DB) *MonitorHistoricalWriter {
 }
 
 func (w *MonitorHistoricalWriter) Write(ctx context.Context, historical MonitorHistorical) error {
+	span := sentry.StartSpan(ctx, "function", sentry.WithDescription("MonitorHistoricalWriter.Write"))
+	span.SetData("semyi.monitor.id", historical.MonitorID)
+	span.SetData("semyi.historical.status", historical.Status)
+	ctx = span.Context()
+	defer span.Finish()
+
 	// Validate the historical data
 	valid, err := historical.Validate()
 	if err != nil {
@@ -52,6 +59,12 @@ func (w *MonitorHistoricalWriter) Write(ctx context.Context, historical MonitorH
 }
 
 func (w *MonitorHistoricalWriter) WriteHourly(ctx context.Context, historical MonitorHistorical) error {
+	span := sentry.StartSpan(ctx, "function", sentry.WithDescription("MonitorHistoricalWriter.WriteHourly"))
+	span.SetData("semyi.monitor.id", historical.MonitorID)
+	span.SetData("semyi.historical.status", historical.Status)
+	ctx = span.Context()
+	defer span.Finish()
+
 	// Validate the historical data
 	valid, err := historical.Validate()
 	if err != nil {
@@ -83,6 +96,12 @@ func (w *MonitorHistoricalWriter) WriteHourly(ctx context.Context, historical Mo
 }
 
 func (w *MonitorHistoricalWriter) WriteDaily(ctx context.Context, historical MonitorHistorical) error {
+	span := sentry.StartSpan(ctx, "function", sentry.WithDescription("MonitorHistoricalWriter.WriteDaily"))
+	span.SetData("semyi.monitor.id", historical.MonitorID)
+	span.SetData("semyi.historical.status", historical.Status)
+	ctx = span.Context()
+	defer span.Finish()
+
 	// Validate the historical data
 	valid, err := historical.Validate()
 	if err != nil {

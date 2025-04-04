@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 
+	"github.com/getsentry/sentry-go"
 	"github.com/rs/zerolog/log"
 )
 
@@ -17,6 +18,11 @@ func NewMonitorHistoricalReader(db *sql.DB) *MonitorHistoricalReader {
 }
 
 func (r *MonitorHistoricalReader) ReadRawHistorical(ctx context.Context, monitorId string) ([]MonitorHistorical, error) {
+	span := sentry.StartSpan(ctx, "function", sentry.WithDescription("MonitorHistoricalReader.ReadRawHistorical"))
+	span.SetData("semyi.monitor.id", monitorId)
+	ctx = span.Context()
+	defer span.Finish()
+
 	conn, err := r.db.Conn(ctx)
 	if err != nil {
 		return []MonitorHistorical{}, fmt.Errorf("failed to get connection: %w", err)
@@ -53,6 +59,11 @@ func (r *MonitorHistoricalReader) ReadRawHistorical(ctx context.Context, monitor
 }
 
 func (r *MonitorHistoricalReader) ReadHourlyHistorical(ctx context.Context, monitorId string) ([]MonitorHistorical, error) {
+	span := sentry.StartSpan(ctx, "function", sentry.WithDescription("MonitorHistoricalReader.ReadHourlyHistorical"))
+	span.SetData("semyi.monitor.id", monitorId)
+	ctx = span.Context()
+	defer span.Finish()
+
 	conn, err := r.db.Conn(ctx)
 	if err != nil {
 		return []MonitorHistorical{}, fmt.Errorf("failed to get connection: %w", err)
@@ -89,6 +100,11 @@ func (r *MonitorHistoricalReader) ReadHourlyHistorical(ctx context.Context, moni
 }
 
 func (r *MonitorHistoricalReader) ReadDailyHistorical(ctx context.Context, monitorId string) ([]MonitorHistorical, error) {
+	span := sentry.StartSpan(ctx, "function", sentry.WithDescription("ReadDailyHistorical"))
+	span.SetData("semyi.monitor.id", monitorId)
+	ctx = span.Context()
+	defer span.Finish()
+
 	conn, err := r.db.Conn(ctx)
 	if err != nil {
 		return []MonitorHistorical{}, fmt.Errorf("failed to get connection: %w", err)
@@ -125,6 +141,11 @@ func (r *MonitorHistoricalReader) ReadDailyHistorical(ctx context.Context, monit
 }
 
 func (r *MonitorHistoricalReader) ReadRawLatest(ctx context.Context, monitorId string) (MonitorHistorical, error) {
+	span := sentry.StartSpan(ctx, "function", sentry.WithDescription("MonitorHistoricalReader.ReadRawLatest"))
+	span.SetData("semyi.monitor.id", monitorId)
+	ctx = span.Context()
+	defer span.Finish()
+
 	// Get the latest entry from the raw historical table
 	conn, err := r.db.Conn(ctx)
 	if err != nil {

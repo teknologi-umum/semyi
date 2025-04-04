@@ -14,6 +14,9 @@ import (
 	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
+	"github.com/aldy505/sentry-integration/httpclient"
+	"github.com/aldy505/sentry-integration/sqltracer"
+	"github.com/getsentry/sentry-go"
 	"github.com/marcboeker/go-duckdb/v2"
 	"github.com/rs/zerolog/log"
 )
@@ -22,6 +25,7 @@ var (
 	DefaultInterval int = 30
 	DefaultTimeout  int = 10
 	monitorIds      []string
+	release         string
 )
 
 func main() {
@@ -83,6 +87,22 @@ func main() {
 		}
 	}
 
+	err := sentry.Init(sentry.ClientOptions{
+		Dsn:              os.Getenv("BACKEND_SENTRY_DSN"),
+		SampleRate:       1.0,
+		EnableTracing:    true,
+		TracesSampleRate: 1.0,
+		Release:          release,
+		Environment:      environment,
+	})
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to initialize sentry")
+	}
+
+	httpClient := &http.Client{
+		Transport: httpclient.NewSentryRoundTripper(nil, nil),
+	}
+
 	// Read configuration file
 	config, err := ReadConfigurationFile(configPath)
 	if err != nil {
@@ -108,7 +128,10 @@ func main() {
 			log.Fatal().Err(err).Msg("failed to parse clickhouse DSN")
 		}
 
-		connector = clickhouse.Connector(clickHouseOptions)
+		connector = sqltracer.NewSentrySQLConnector(
+			clickhouse.Connector(clickHouseOptions),
+			sqltracer.WithDatabaseSystem("clickhouse"),
+		)
 	} else {
 		connector, err = duckdb.NewConnector(dbPath, func(execer driver.ExecerContext) error {
 			return nil
@@ -116,6 +139,12 @@ func main() {
 		if err != nil {
 			log.Fatal().Err(err).Msg("failed to create duckdb connector")
 		}
+
+		connector = sqltracer.NewSentrySQLConnector(
+			connector,
+			sqltracer.WithDatabaseSystem("duckdb"),
+			sqltracer.WithDatabaseName(dbPath),
+		)
 	}
 	var db *sql.DB = sql.OpenDB(connector)
 	db.SetConnMaxLifetime(time.Hour)
@@ -150,26 +179,30 @@ func main() {
 	// Initialize alert providers if enabled
 	if config.Alerting.Telegram.Enabled && config.Alerting.Telegram.URL != "" && config.Alerting.Telegram.ChatID != "" {
 		processor.telegramAlertProvider = NewTelegramAlertProvider(TelegramProviderConfig{
-			Url:    config.Alerting.Telegram.URL,
-			ChatID: config.Alerting.Telegram.ChatID,
+			Url:        config.Alerting.Telegram.URL,
+			ChatID:     config.Alerting.Telegram.ChatID,
+			HttpClient: httpClient,
 		})
 	}
 
 	if config.Alerting.Discord.Enabled && config.Alerting.Discord.WebhookURL != "" {
 		processor.discordAlertProvider = NewDiscordAlertProvider(DiscordProviderConfig{
 			WebhookURL: config.Alerting.Discord.WebhookURL,
+			HttpClient: httpClient,
 		})
 	}
 
 	if config.Alerting.HTTP.Enabled && config.Alerting.HTTP.WebhookURL != "" {
 		processor.httpAlertProvider = NewHTTPAlertProvider(HTTPProviderConfig{
 			WebhookURL: config.Alerting.HTTP.WebhookURL,
+			HttpClient: httpClient,
 		})
 	}
 
 	if config.Alerting.Slack.Enabled && config.Alerting.Slack.WebhookURL != "" {
 		processor.slackAlertProvider = NewSlackAlertProvider(SlackProviderConfig{
 			WebhookURL: config.Alerting.Slack.WebhookURL,
+			HttpClient: httpClient,
 		})
 	}
 
