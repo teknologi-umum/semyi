@@ -34,15 +34,15 @@ func (w *CleanupWorker) Run(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			if err := w.cleanup(ctx); err != nil {
+			if err := w.Cleanup(ctx); err != nil {
 				log.Error().Err(err).Msg("Failed to run cleanup")
 			}
 		}
 	}
 }
 
-// cleanup removes historical data older than the retention period
-func (w *CleanupWorker) cleanup(ctx context.Context) error {
+// Cleanup removes historical data older than the retention period
+func (w *CleanupWorker) Cleanup(ctx context.Context) error {
 	// Calculate the cutoff date
 	cutoffDate := time.Now().AddDate(0, 0, -w.retentionPeriod)
 
