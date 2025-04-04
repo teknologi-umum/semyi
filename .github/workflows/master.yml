@@ -54,6 +54,8 @@ jobs:
         run: go test -v -coverprofile=coverage.out -covermode=atomic ./...
 
       - uses: codecov/codecov-action@v3
+        with:
+          flags: backend
 
   cd:
     name: CD
