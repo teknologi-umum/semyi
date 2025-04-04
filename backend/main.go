@@ -76,31 +76,6 @@ func main() {
 		log.Warn().Msg("API_KEY is not set")
 	}
 
-	telegramChatID, ok := os.LookupEnv("TELEGRAM_CHAT_ID")
-	if !ok {
-		log.Warn().Msg("TELEGRAM_CHAT_ID is not set")
-	}
-
-	telegramUrl, ok := os.LookupEnv("TELEGRAM_URL is not set")
-	if !ok {
-		log.Warn().Msg("TELEGRAM_URL is not set")
-	}
-
-	discordWebhookURL, ok := os.LookupEnv("DISCORD_WEBHOOK_URL")
-	if !ok {
-		log.Warn().Msg("DISCORD_WEBHOOK_URL is not set")
-	}
-
-	httpWebhookURL, ok := os.LookupEnv("HTTP_WEBHOOK_URL")
-	if !ok {
-		log.Warn().Msg("HTTP_WEBHOOK_URL is not set")
-	}
-
-	slackWebhookURL, ok := os.LookupEnv("SLACK_WEBHOOK_URL")
-	if !ok {
-		log.Warn().Msg("SLACK_WEBHOOK_URL is not set")
-	}
-
 	if os.Getenv("ENV") == "" {
 		err := os.Setenv("ENV", "development")
 		if err != nil {
@@ -167,22 +142,35 @@ func main() {
 	aggregateWorker := NewAggregateWorker(monitorIds, monitorHistoricalReader, monitorHistoricalWriter)
 
 	processor := &Processor{
-		telegramAlertProvider: NewTelegramAlertProvider(TelegramProviderConfig{
-			Url:    telegramUrl,
-			ChatID: telegramChatID,
-		}),
-		discordAlertProvider: NewDiscordAlertProvider(DiscordProviderConfig{
-			WebhookURL: discordWebhookURL,
-		}),
-		httpAlertProvider: NewHTTPAlertProvider(HTTPProviderConfig{
-			WebhookURL: httpWebhookURL,
-		}),
-		slackAlertProvider: NewSlackAlertProvider(SlackProviderConfig{
-			WebhookURL: slackWebhookURL,
-		}),
 		historicalWriter: monitorHistoricalWriter,
 		historicalReader: monitorHistoricalReader,
 		centralBroker:    centralBroker,
+	}
+
+	// Initialize alert providers if enabled
+	if config.Alerting.Telegram.Enabled && config.Alerting.Telegram.URL != "" && config.Alerting.Telegram.ChatID != "" {
+		processor.telegramAlertProvider = NewTelegramAlertProvider(TelegramProviderConfig{
+			Url:    config.Alerting.Telegram.URL,
+			ChatID: config.Alerting.Telegram.ChatID,
+		})
+	}
+
+	if config.Alerting.Discord.Enabled && config.Alerting.Discord.WebhookURL != "" {
+		processor.discordAlertProvider = NewDiscordAlertProvider(DiscordProviderConfig{
+			WebhookURL: config.Alerting.Discord.WebhookURL,
+		})
+	}
+
+	if config.Alerting.HTTP.Enabled && config.Alerting.HTTP.WebhookURL != "" {
+		processor.httpAlertProvider = NewHTTPAlertProvider(HTTPProviderConfig{
+			WebhookURL: config.Alerting.HTTP.WebhookURL,
+		})
+	}
+
+	if config.Alerting.Slack.Enabled && config.Alerting.Slack.WebhookURL != "" {
+		processor.slackAlertProvider = NewSlackAlertProvider(SlackProviderConfig{
+			WebhookURL: config.Alerting.Slack.WebhookURL,
+		})
 	}
 
 	// Create a new worker
