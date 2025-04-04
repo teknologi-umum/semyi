@@ -39,7 +39,7 @@ jobs:
       matrix:
         database:
           - name: "ClickHouse"
-            url: "clickhouse://clickhouse:9000"
+            url: "clickhouse://default@clickhouse:9000/default"
           - name: "DuckDB"
             url: "./test.duckdb"
     services:
