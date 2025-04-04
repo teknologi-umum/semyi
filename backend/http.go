@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net"
@@ -453,7 +454,7 @@ func (s *Server) pushHealthcheck(w http.ResponseWriter, r *http.Request) {
 		Monitor:         monitor,
 	}
 
-	go s.processor.ProcessResponse(r.Context(), response)
+	go s.processor.ProcessResponse(context.WithoutCancel(r.Context()), response)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)

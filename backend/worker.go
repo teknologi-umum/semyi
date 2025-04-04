@@ -127,7 +127,7 @@ func (w *Worker) Run() {
 		if !doNotWriteToDatabase {
 			// Insert the response to the database
 			log.Debug().Str("monitor_id", w.monitor.UniqueID).Msg("processing response")
-			go w.processor.ProcessResponse(ctx, response)
+			go w.processor.ProcessResponse(context.WithoutCancel(ctx), response)
 		}
 
 		// Sleep for the interval
