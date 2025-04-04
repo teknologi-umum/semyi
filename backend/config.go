@@ -41,6 +41,8 @@ const (
 	AlertProviderTypeUnspecified AlertProviderType = ""
 	AlertProviderTypeTelegram    AlertProviderType = "telegram"
 	AlertProviderTypeDiscord     AlertProviderType = "discord"
+	AlertProviderTypeHTTP        AlertProviderType = "http"
+	AlertProviderTypeSlack       AlertProviderType = "slack"
 )
 
 type Monitor struct {

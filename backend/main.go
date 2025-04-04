@@ -86,6 +86,21 @@ func main() {
 		log.Warn().Msg("TELEGRAM_URL is not set")
 	}
 
+	discordWebhookURL, ok := os.LookupEnv("DISCORD_WEBHOOK_URL")
+	if !ok {
+		log.Warn().Msg("DISCORD_WEBHOOK_URL is not set")
+	}
+
+	httpWebhookURL, ok := os.LookupEnv("HTTP_WEBHOOK_URL")
+	if !ok {
+		log.Warn().Msg("HTTP_WEBHOOK_URL is not set")
+	}
+
+	slackWebhookURL, ok := os.LookupEnv("SLACK_WEBHOOK_URL")
+	if !ok {
+		log.Warn().Msg("SLACK_WEBHOOK_URL is not set")
+	}
+
 	if os.Getenv("ENV") == "" {
 		err := os.Setenv("ENV", "development")
 		if err != nil {
@@ -156,10 +171,18 @@ func main() {
 			Url:    telegramUrl,
 			ChatID: telegramChatID,
 		}),
-		historicalWriter:     monitorHistoricalWriter,
-		historicalReader:     monitorHistoricalReader,
-		discordAlertProvider: nil,
-		centralBroker:        centralBroker,
+		discordAlertProvider: NewDiscordAlertProvider(DiscordProviderConfig{
+			WebhookURL: discordWebhookURL,
+		}),
+		httpAlertProvider: NewHTTPAlertProvider(HTTPProviderConfig{
+			WebhookURL: httpWebhookURL,
+		}),
+		slackAlertProvider: NewSlackAlertProvider(SlackProviderConfig{
+			WebhookURL: slackWebhookURL,
+		}),
+		historicalWriter: monitorHistoricalWriter,
+		historicalReader: monitorHistoricalReader,
+		centralBroker:    centralBroker,
 	}
 
 	// Create a new worker

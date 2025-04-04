@@ -15,6 +15,8 @@ type Processor struct {
 
 	telegramAlertProvider Alerter
 	discordAlertProvider  Alerter
+	httpAlertProvider     Alerter
+	slackAlertProvider    Alerter
 }
 
 func (m *Processor) ProcessResponse(response Response) {
@@ -60,7 +62,7 @@ func (m *Processor) ProcessResponse(response Response) {
 	}
 
 	go func() {
-		if m.telegramAlertProvider == nil && m.discordAlertProvider == nil {
+		if m.telegramAlertProvider == nil && m.discordAlertProvider == nil && m.httpAlertProvider == nil && m.slackAlertProvider == nil {
 			log.Warn().Msg("no alert providers are set")
 			return
 		}
@@ -82,7 +84,7 @@ func (m *Processor) ProcessResponse(response Response) {
 
 		if lastRawHistorical.Status != status {
 			switch response.Monitor.AlertProvider {
-			case AlertProviderTypeTelegram, AlertProviderTypeUnspecified:
+			case AlertProviderTypeTelegram:
 				if m.telegramAlertProvider == nil {
 					log.Warn().Msg("telegram alert provider is not set")
 					return
@@ -93,7 +95,35 @@ func (m *Processor) ProcessResponse(response Response) {
 					log.Error().Err(err).Msg("failed to send alert")
 				}
 			case AlertProviderTypeDiscord:
-				panic("TODO: Implement me!")
+				if m.discordAlertProvider == nil {
+					log.Warn().Msg("discord alert provider is not set")
+					return
+				}
+
+				err := m.discordAlertProvider.Send(context.Background(), alertMessage)
+				if err != nil {
+					log.Error().Err(err).Msg("failed to send alert")
+				}
+			case AlertProviderTypeHTTP:
+				if m.httpAlertProvider == nil {
+					log.Warn().Msg("http alert provider is not set")
+					return
+				}
+
+				err := m.httpAlertProvider.Send(context.Background(), alertMessage)
+				if err != nil {
+					log.Error().Err(err).Msg("failed to send alert")
+				}
+			case AlertProviderTypeSlack:
+				if m.slackAlertProvider == nil {
+					log.Warn().Msg("slack alert provider is not set")
+					return
+				}
+
+				err := m.slackAlertProvider.Send(context.Background(), alertMessage)
+				if err != nil {
+					log.Error().Err(err).Msg("failed to send alert")
+				}
 			}
 		}
 
