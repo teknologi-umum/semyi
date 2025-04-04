@@ -50,7 +50,7 @@ func (w *MonitorHistoricalWriter) Write(ctx context.Context, historical MonitorH
 	}()
 
 	_, err = conn.ExecContext(ctx, "INSERT INTO monitor_historical (monitor_id, status, latency, timestamp) VALUES (?, ?, ?, ?)",
-		historical.MonitorID, historical.Status, historical.Latency, historical.Timestamp)
+		historical.MonitorID, uint8(historical.Status), historical.Latency, historical.Timestamp)
 	if err != nil {
 		return fmt.Errorf("failed to insert historical data: %w", err)
 	}
@@ -101,7 +101,7 @@ func (w *MonitorHistoricalWriter) WriteHourly(ctx context.Context, historical Mo
 	}
 
 	_, err = tx.ExecContext(ctx, "INSERT INTO monitor_historical_hourly_aggregate (monitor_id, status, latency, timestamp, created_at) VALUES (?, ?, ?, ?, ?)",
-		historical.MonitorID, historical.Status, historical.Latency, historical.Timestamp, time.Now().UTC(), historical.Status, historical.Latency, time.Now().UTC())
+		historical.MonitorID, uint8(historical.Status), historical.Latency, historical.Timestamp, time.Now().UTC())
 	if err != nil {
 		if rollbackErr := tx.Rollback(); rollbackErr != nil {
 			log.Warn().Err(rollbackErr).Msg("failed to rollback transaction")
@@ -161,7 +161,7 @@ func (w *MonitorHistoricalWriter) WriteDaily(ctx context.Context, historical Mon
 	}
 
 	_, err = tx.ExecContext(ctx, "INSERT INTO monitor_historical_daily_aggregate (monitor_id, status, latency, timestamp, created_at) VALUES (?, ?, ?, ?, ?)",
-		historical.MonitorID, historical.Status, historical.Latency, historical.Timestamp, time.Now().UTC())
+		historical.MonitorID, uint8(historical.Status), historical.Latency, historical.Timestamp, time.Now().UTC())
 	if err != nil {
 		if rollbackErr := tx.Rollback(); rollbackErr != nil {
 			log.Warn().Err(rollbackErr).Msg("failed to rollback transaction")
