@@ -51,7 +51,7 @@ jobs:
         run: go build -buildvcs=false .
 
       - name: Test
-        run: go test -v
+        run: go test -v -coverprofile=coverage.out -covermode=atomic ./...
 
       - uses: codecov/codecov-action@v3
 
@@ -93,6 +93,7 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          platform: linux/amd64,linux/arm64
           secrets: |
             "SENTRY_DSN=${{ secrets.SENTRY_DSN }}"
             "SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }}"

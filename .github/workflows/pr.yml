@@ -49,6 +49,6 @@ jobs:
         run: go build -buildvcs=false .
 
       - name: Test
-        run: go test -v
+        run: go test -v -coverprofile=coverage.out -covermode=atomic ./...
 
       - uses: codecov/codecov-action@v3
