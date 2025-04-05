@@ -87,11 +87,28 @@ func main() {
 		}
 	}
 
+	sentrySampleRate := 1.0
+	if os.Getenv("BACKEND_SENTRY_SAMPLE_RATE") != "" {
+		var err error = nil
+		sentrySampleRate, err = strconv.ParseFloat(os.Getenv("SENTRY_SAMPLE_RATE"), 64)
+		if err != nil {
+			log.Fatal().Err(err).Msg("failed to parse sentry sample rate")
+		}
+	}
+
+	sentryTracesSampleRate := 1.0
+	if os.Getenv("BACKEND_SENTRY_TRACES_SAMPLE_RATE") != "" {
+		var err error = nil
+		sentryTracesSampleRate, err = strconv.ParseFloat(os.Getenv("SENTRY_TRACES_SAMPLE_RATE"), 64)
+		if err != nil {
+			log.Fatal().Err(err).Msg("failed to parse sentry traces sample rate")
+		}
+	}
 	err := sentry.Init(sentry.ClientOptions{
 		Dsn:              os.Getenv("BACKEND_SENTRY_DSN"),
-		SampleRate:       1.0,
+		SampleRate:       sentrySampleRate,
 		EnableTracing:    true,
-		TracesSampleRate: 1.0,
+		TracesSampleRate: sentryTracesSampleRate,
 		Release:          release,
 		Environment:      environment,
 	})
