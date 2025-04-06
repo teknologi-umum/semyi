@@ -3,7 +3,6 @@ import EndpointStatusCard from "@/components/EndpointStatusCard";
 import { BASE_URL } from "@/constants";
 import type { Snapshot } from "@/types";
 import { fetchAllStaticSnapshots } from "@/utils/fetcher";
-import config from "@config";
 import * as Sentry from "@sentry/solid";
 import { fromEvent, map } from "rxjs";
 import { For, createResource, onCleanup, onMount } from "solid-js";
@@ -11,12 +10,8 @@ import styles from "./styles.module.css";
 
 export default function OverviewPage() {
   const abortController = new AbortController();
-  const [staticSnapshot] = createResource(() =>
-    fetchAllStaticSnapshots(
-      config.monitors.map((c) => c.unique_id),
-      "raw",
-      abortController.signal,
-    ),
+  const [staticSnapshot, { refetch }] = createResource(() =>
+    fetchAllStaticSnapshots([], "raw", abortController.signal),
   );
   const source = new EventSource(`${BASE_URL}/api/overview`);
   const snapshotStream$ = fromEvent<MessageEvent<string>>(source, "message").pipe(
@@ -45,13 +40,27 @@ export default function OverviewPage() {
     }),
   );
 
+  let fallbackTimeout: NodeJS.Timeout | null = null;
+
   onMount(() => {
     document.title = "Overview | Semyi";
+
+    // Fallback mechanism in case the event source is not working
+    fallbackTimeout = setTimeout(
+      () => {
+        refetch();
+      },
+      2 * 60 * 1000,
+    ); // 2 minutes
   });
 
   onCleanup(() => {
     if (source != null) {
       source.close();
+    }
+
+    if (fallbackTimeout != null) {
+      clearTimeout(fallbackTimeout);
     }
   });
 
