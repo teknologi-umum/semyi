@@ -306,13 +306,6 @@ func (s *Server) staticSnapshot(w http.ResponseWriter, r *http.Request) {
 		},
 	})
 
-	if monitorId == "" {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
-		_ = json.NewEncoder(w).Encode(HttpCommonError{Error: "id is required"})
-		return
-	}
-
 	interval := r.URL.Query().Get("interval")
 	if interval == "" {
 		interval = "hourly"
@@ -325,60 +318,107 @@ func (s *Server) staticSnapshot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !slices.Contains(monitorIds, monitorId) {
+	if monitorId != "" {
+		if !slices.Contains(monitorIds, monitorId) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			_ = json.NewEncoder(w).Encode(HttpCommonError{Error: "id is not in the list of monitors"})
+			return
+		}
+
+		var err error
+		var monitor Monitor
+		var monitorHistorical []MonitorHistorical
+		switch interval {
+		case "raw":
+			monitorHistorical, err = s.historicalReader.ReadRawHistorical(ctx, monitorId)
+			if err != nil {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusInternalServerError)
+				_ = json.NewEncoder(w).Encode(HttpCommonError{Error: fmt.Sprintf("failed to read raw historical data: %s", err)})
+				sentry.GetHubFromContext(ctx).CaptureException(err)
+				return
+			}
+		case "hourly":
+			monitorHistorical, err = s.historicalReader.ReadHourlyHistorical(ctx, monitorId)
+			if err != nil {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusInternalServerError)
+				_ = json.NewEncoder(w).Encode(HttpCommonError{Error: fmt.Sprintf("failed to read hourly historical data: %s", err)})
+				sentry.GetHubFromContext(ctx).CaptureException(err)
+				return
+			}
+		case "daily":
+			monitorHistorical, err = s.historicalReader.ReadDailyHistorical(ctx, monitorId)
+			if err != nil {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusInternalServerError)
+				_ = json.NewEncoder(w).Encode(HttpCommonError{Error: fmt.Sprintf("failed to read daily historical data: %s", err)})
+				sentry.GetHubFromContext(ctx).CaptureException(err)
+				return
+			}
+		}
+
+		// Acquire monitor metadata
+		for _, m := range s.monitors {
+			if m.UniqueID == monitorId {
+				monitor = m
+				break
+			}
+		}
+
 		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
-		_ = json.NewEncoder(w).Encode(HttpCommonError{Error: "id is not in the list of monitors"})
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(StaticSnapshotResponse{
+			Metadata:   monitor,
+			Historical: monitorHistorical,
+		})
 		return
 	}
 
-	var err error
-	var monitor Monitor
-	var monitorHistorical []MonitorHistorical
-	switch interval {
-	case "raw":
-		monitorHistorical, err = s.historicalReader.ReadRawHistorical(ctx, monitorId)
-		if err != nil {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusInternalServerError)
-			_ = json.NewEncoder(w).Encode(HttpCommonError{Error: fmt.Sprintf("failed to read raw historical data: %s", err)})
-			sentry.GetHubFromContext(ctx).CaptureException(err)
-			return
+	var staticSnapshotResponse []StaticSnapshotResponse
+	for _, monitor := range s.monitors {
+		var err error
+		var monitorHistorical []MonitorHistorical
+		switch interval {
+		case "raw":
+			monitorHistorical, err = s.historicalReader.ReadRawHistorical(ctx, monitorId)
+			if err != nil {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusInternalServerError)
+				_ = json.NewEncoder(w).Encode(HttpCommonError{Error: fmt.Sprintf("failed to read raw historical data: %s", err)})
+				sentry.GetHubFromContext(ctx).CaptureException(err)
+				return
+			}
+		case "hourly":
+			monitorHistorical, err = s.historicalReader.ReadHourlyHistorical(ctx, monitorId)
+			if err != nil {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusInternalServerError)
+				_ = json.NewEncoder(w).Encode(HttpCommonError{Error: fmt.Sprintf("failed to read hourly historical data: %s", err)})
+				sentry.GetHubFromContext(ctx).CaptureException(err)
+				return
+			}
+		case "daily":
+			monitorHistorical, err = s.historicalReader.ReadDailyHistorical(ctx, monitorId)
+			if err != nil {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusInternalServerError)
+				_ = json.NewEncoder(w).Encode(HttpCommonError{Error: fmt.Sprintf("failed to read daily historical data: %s", err)})
+				sentry.GetHubFromContext(ctx).CaptureException(err)
+				return
+			}
 		}
-	case "hourly":
-		monitorHistorical, err = s.historicalReader.ReadHourlyHistorical(ctx, monitorId)
-		if err != nil {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusInternalServerError)
-			_ = json.NewEncoder(w).Encode(HttpCommonError{Error: fmt.Sprintf("failed to read hourly historical data: %s", err)})
-			sentry.GetHubFromContext(ctx).CaptureException(err)
-			return
-		}
-	case "daily":
-		monitorHistorical, err = s.historicalReader.ReadDailyHistorical(ctx, monitorId)
-		if err != nil {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusInternalServerError)
-			_ = json.NewEncoder(w).Encode(HttpCommonError{Error: fmt.Sprintf("failed to read daily historical data: %s", err)})
-			sentry.GetHubFromContext(ctx).CaptureException(err)
-			return
-		}
-	}
 
-	// Acquire monitor metadata
-	for _, m := range s.monitors {
-		if m.UniqueID == monitorId {
-			monitor = m
-			break
-		}
+		staticSnapshotResponse = append(staticSnapshotResponse, StaticSnapshotResponse{
+			Metadata:   monitor,
+			Historical: monitorHistorical,
+		})
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	_ = json.NewEncoder(w).Encode(StaticSnapshotResponse{
-		Metadata:   monitor,
-		Historical: monitorHistorical,
-	})
+	_ = json.NewEncoder(w).Encode(staticSnapshotResponse)
 }
 
 func (s *Server) submitIncindent(w http.ResponseWriter, r *http.Request) {
