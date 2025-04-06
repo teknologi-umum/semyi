@@ -13,7 +13,6 @@ import (
 
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/marcboeker/go-duckdb/v2"
-	_ "github.com/marcboeker/go-duckdb/v2"
 	"github.com/rs/zerolog/log"
 )
 
