@@ -8,7 +8,7 @@ FROM golang:1.24-bookworm AS backend
 WORKDIR /app
 COPY backend/ .
 COPY config.json /config.json
-RUN go build .
+RUN go build -ldflags="-X 'main.release=$(git describe --tags --always)'" -o semyi .
 
 FROM debian:bookworm
 ENV ENV=production
@@ -20,8 +20,12 @@ ENV DEFAULT_INTERVAL=30
 ENV DEFAULT_TIMEOUT=10
 ENV PORT=5000
 ENV API_KEY=
+
 WORKDIR /app
-RUN mkdir -p /data
+RUN mkdir -p /data && \
+    apt-get update && \
+    apt-get install -y curl ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
 COPY LICENSE /app/LICENSE
 COPY README.md /app/README.md
 COPY --from=backend /app/semyi /app/src/semyi
