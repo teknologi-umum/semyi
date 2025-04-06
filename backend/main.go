@@ -90,7 +90,7 @@ func main() {
 	sentrySampleRate := 1.0
 	if os.Getenv("BACKEND_SENTRY_SAMPLE_RATE") != "" {
 		var err error = nil
-		sentrySampleRate, err = strconv.ParseFloat(os.Getenv("SENTRY_SAMPLE_RATE"), 64)
+		sentrySampleRate, err = strconv.ParseFloat(os.Getenv("BACKEND_SENTRY_SAMPLE_RATE"), 64)
 		if err != nil {
 			log.Fatal().Err(err).Msg("failed to parse sentry sample rate")
 		}
@@ -99,7 +99,7 @@ func main() {
 	sentryTracesSampleRate := 1.0
 	if os.Getenv("BACKEND_SENTRY_TRACES_SAMPLE_RATE") != "" {
 		var err error = nil
-		sentryTracesSampleRate, err = strconv.ParseFloat(os.Getenv("SENTRY_TRACES_SAMPLE_RATE"), 64)
+		sentryTracesSampleRate, err = strconv.ParseFloat(os.Getenv("BACKEND_SENTRY_TRACES_SAMPLE_RATE"), 64)
 		if err != nil {
 			log.Fatal().Err(err).Msg("failed to parse sentry traces sample rate")
 		}
