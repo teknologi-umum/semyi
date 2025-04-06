@@ -11,11 +11,7 @@ import styles from "./styles.module.css";
 export default function OverviewPage() {
   const abortController = new AbortController();
   const [staticSnapshot, { refetch }] = createResource(() =>
-    fetchAllStaticSnapshots(
-      [],
-      "raw",
-      abortController.signal,
-    ),
+    fetchAllStaticSnapshots([], "raw", abortController.signal),
   );
   const source = new EventSource(`${BASE_URL}/api/overview`);
   const snapshotStream$ = fromEvent<MessageEvent<string>>(source, "message").pipe(
@@ -50,9 +46,12 @@ export default function OverviewPage() {
     document.title = "Overview | Semyi";
 
     // Fallback mechanism in case the event source is not working
-    fallbackTimeout = setTimeout(() => {
-      refetch();
-    }, 2 * 60 * 1000); // 2 minutes
+    fallbackTimeout = setTimeout(
+      () => {
+        refetch();
+      },
+      2 * 60 * 1000,
+    ); // 2 minutes
   });
 
   onCleanup(() => {

@@ -15,11 +15,9 @@ import styles from "./styles.module.css";
 export default function DetailPage() {
   const abortController = new AbortController();
   const [searchParams] = useSearchParams();
-  let uniqueId: string = "";
+  const uniqueId = (Array.isArray(searchParams.id) ? searchParams.id.at(0) : searchParams.id) ?? "";
   if (searchParams.id === undefined || searchParams.id === null || searchParams.id === "") {
     return <Navigate href="/" />;
-  } else {
-    uniqueId = (Array.isArray(searchParams.id) ? searchParams.id.at(0) : searchParams.id) ?? "";
   }
 
   const [staticSnapshot, { refetch }] = createResource(() =>
@@ -54,15 +52,18 @@ export default function DetailPage() {
     }),
   );
 
-  let fallbackTimeout: NodeJS.Timeout | null = null;  
+  let fallbackTimeout: NodeJS.Timeout | null = null;
 
   onMount(() => {
     document.title = `Status for ${staticSnapshot()?.metadata.name} | Semyi`;
 
     // Fallback mechanism in case the event source is not working
-    fallbackTimeout = setTimeout(() => {
-      refetch();
-    }, 2 * 60 * 1000); // 2 minutes
+    fallbackTimeout = setTimeout(
+      () => {
+        refetch();
+      },
+      2 * 60 * 1000,
+    ); // 2 minutes
   });
 
   onCleanup(() => {
