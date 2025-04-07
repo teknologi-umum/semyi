@@ -115,6 +115,7 @@ func main() {
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to initialize sentry")
 	}
+	defer sentry.Flush(time.Second * 10)
 
 	httpClient := &http.Client{
 		Transport: httpclient.NewSentryRoundTripper(nil, nil),
@@ -169,7 +170,7 @@ func main() {
 	defer func(db *sql.DB) {
 		err := db.Close()
 		if err != nil {
-			log.Fatal().Err(err).Msg("failed to close database")
+			log.Warn().Err(err).Msg("failed to close database")
 		}
 	}(db)
 
@@ -283,7 +284,7 @@ func main() {
 	}()
 
 	// Start the server
-	log.Printf("Starting server on port %s", port)
+	log.Info().Msgf("Starting server on port %s", port)
 	if e := server.ListenAndServe(); e != nil && !errors.Is(e, http.ErrServerClosed) {
 		log.Fatal().Err(err).Msg("Failed to start server")
 	}

@@ -79,7 +79,7 @@ export default function OverviewPage() {
                 monitorId={snapshot.metadata.id}
                 name={snapshot.metadata.name}
                 url={snapshot.metadata.public_url ?? ""}
-                staticSnapshot={snapshot.historical.reverse().slice(0, 100)}
+                staticSnapshot={snapshot.historical?.reverse().slice(0, 100) ?? []}
                 snapshotStream$={snapshotStream$}
               />
             );
