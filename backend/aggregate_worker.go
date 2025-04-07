@@ -25,7 +25,7 @@ func (w *AggregateWorker) RunHourlyAggregate() {
 		var startTime = time.Now()
 
 		for _, monitorId := range w.monitorIds {
-			historicalData, err := w.reader.ReadRawHistorical(ctx, monitorId)
+			historicalData, err := w.reader.ReadRawHistorical(ctx, monitorId, false)
 			if err != nil {
 				log.Error().Err(err).Msgf("failed to read raw historical data for monitor %s", monitorId)
 				sentry.GetHubFromContext(ctx).CaptureException(err)
@@ -90,7 +90,7 @@ func (w *AggregateWorker) RunDailyAggregate() {
 		var startTime = time.Now()
 
 		for _, monitorId := range w.monitorIds {
-			historicalData, err := w.reader.ReadRawHistorical(ctx, monitorId)
+			historicalData, err := w.reader.ReadRawHistorical(ctx, monitorId, false)
 			if err != nil {
 				log.Error().Err(err).Msgf("failed to read raw historical data for monitor %s", monitorId)
 				sentry.GetHubFromContext(ctx).CaptureException(err)

@@ -77,6 +77,7 @@ func (w *Worker) Run() {
 		span.SetData("semyi.monitor.id", w.monitor.UniqueID)
 		span.SetData("semyi.monitor.type", w.monitor.Type)
 		ctx = span.Context()
+		log.Debug().Str("monitor_id", w.monitor.UniqueID).Msg("running worker")
 
 		var response Response
 		var err error

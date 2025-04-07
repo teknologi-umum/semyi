@@ -235,7 +235,8 @@ func main() {
 
 		go func(worker *Worker) {
 			defer func() {
-				if r := recover(); r != nil {
+				if r, ok := recover().(error); ok && r != nil {
+					sentry.CaptureException(r)
 					log.Warn().Str("monitor_id", worker.monitor.UniqueID).Msgf("[Running worker] Recovered from panic: %v", r)
 				}
 			}()
@@ -262,8 +263,7 @@ func main() {
 		CentralBroker:           centralBroker,
 		IncidentWriter:          NewIncidentWriter(db),
 		MonitorList:             config.Monitors,
-
-		ApiKey: apiKey,
+		ApiKey:                  apiKey,
 	})
 	go func() {
 		// Listen for SIGKILL and SIGTERM
@@ -277,6 +277,7 @@ func main() {
 
 		err = server.Shutdown(ctx)
 		if err != nil {
+			sentry.CaptureException(err)
 			log.Fatal().Err(err).Msg("Failed to shutdown server")
 		}
 	}()
