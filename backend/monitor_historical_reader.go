@@ -17,7 +17,7 @@ func NewMonitorHistoricalReader(db *sql.DB) *MonitorHistoricalReader {
 	return &MonitorHistoricalReader{db: db}
 }
 
-func (r *MonitorHistoricalReader) ReadRawHistorical(ctx context.Context, monitorId string) ([]MonitorHistorical, error) {
+func (r *MonitorHistoricalReader) ReadRawHistorical(ctx context.Context, monitorId string, limitResults bool) ([]MonitorHistorical, error) {
 	span := sentry.StartSpan(ctx, "function", sentry.WithDescription("MonitorHistoricalReader.ReadRawHistorical"))
 	span.SetData("semyi.monitor.id", monitorId)
 	ctx = span.Context()
@@ -34,7 +34,12 @@ func (r *MonitorHistoricalReader) ReadRawHistorical(ctx context.Context, monitor
 		}
 	}()
 
-	rows, err := conn.QueryContext(ctx, "SELECT timestamp, monitor_id, status, latency FROM monitor_historical WHERE monitor_id = ? ORDER BY timestamp DESC", monitorId)
+	query := "SELECT timestamp, monitor_id, status, latency FROM monitor_historical WHERE monitor_id = ? ORDER BY timestamp DESC"
+	if limitResults {
+		query += " LIMIT 100"
+	}
+
+	rows, err := conn.QueryContext(ctx, query, monitorId)
 	if err != nil {
 		return []MonitorHistorical{}, fmt.Errorf("failed to read raw historical data: %w", err)
 	}
@@ -58,7 +63,7 @@ func (r *MonitorHistoricalReader) ReadRawHistorical(ctx context.Context, monitor
 	return monitorsHistorical, nil
 }
 
-func (r *MonitorHistoricalReader) ReadHourlyHistorical(ctx context.Context, monitorId string) ([]MonitorHistorical, error) {
+func (r *MonitorHistoricalReader) ReadHourlyHistorical(ctx context.Context, monitorId string, limitResults bool) ([]MonitorHistorical, error) {
 	span := sentry.StartSpan(ctx, "function", sentry.WithDescription("MonitorHistoricalReader.ReadHourlyHistorical"))
 	span.SetData("semyi.monitor.id", monitorId)
 	ctx = span.Context()
@@ -75,7 +80,12 @@ func (r *MonitorHistoricalReader) ReadHourlyHistorical(ctx context.Context, moni
 		}
 	}()
 
-	rows, err := conn.QueryContext(ctx, "SELECT timestamp, monitor_id, status, latency FROM monitor_historical_hourly_aggregate WHERE monitor_id = ? ORDER BY timestamp DESC", monitorId)
+	query := "SELECT timestamp, monitor_id, status, latency FROM monitor_historical_hourly_aggregate WHERE monitor_id = ? ORDER BY timestamp DESC"
+	if limitResults {
+		query += " LIMIT 100"
+	}
+
+	rows, err := conn.QueryContext(ctx, query, monitorId)
 	if err != nil {
 		return []MonitorHistorical{}, fmt.Errorf("failed to read hourly historical data: %w", err)
 	}
@@ -99,7 +109,7 @@ func (r *MonitorHistoricalReader) ReadHourlyHistorical(ctx context.Context, moni
 	return monitorsHistorical, nil
 }
 
-func (r *MonitorHistoricalReader) ReadDailyHistorical(ctx context.Context, monitorId string) ([]MonitorHistorical, error) {
+func (r *MonitorHistoricalReader) ReadDailyHistorical(ctx context.Context, monitorId string, limitResults bool) ([]MonitorHistorical, error) {
 	span := sentry.StartSpan(ctx, "function", sentry.WithDescription("ReadDailyHistorical"))
 	span.SetData("semyi.monitor.id", monitorId)
 	ctx = span.Context()
@@ -116,7 +126,12 @@ func (r *MonitorHistoricalReader) ReadDailyHistorical(ctx context.Context, monit
 		}
 	}()
 
-	rows, err := conn.QueryContext(ctx, "SELECT timestamp, monitor_id, status, latency FROM monitor_historical_daily_aggregate WHERE monitor_id = ? ORDER BY timestamp DESC", monitorId)
+	query := "SELECT timestamp, monitor_id, status, latency FROM monitor_historical_daily_aggregate WHERE monitor_id = ? ORDER BY timestamp DESC"
+	if limitResults {
+		query += " LIMIT 100"
+	}
+
+	rows, err := conn.QueryContext(ctx, query, monitorId)
 	if err != nil {
 		return []MonitorHistorical{}, fmt.Errorf("failed to read daily historical data: %w", err)
 	}
