@@ -54,8 +54,8 @@ export default function DetailPage() {
 
   let fallbackTimeout: NodeJS.Timeout | null = null;
 
-  onMount(() => {
-    document.title = `Status for ${staticSnapshot()?.metadata.name} | Semyi`;
+  onMount(async () => {
+    document.title = "Status Details | Semyi";
 
     // Fallback mechanism in case the event source is not working
     fallbackTimeout = setTimeout(
@@ -64,6 +64,15 @@ export default function DetailPage() {
       },
       2 * 60 * 1000,
     ); // 2 minutes
+
+    while (true) {
+      if (staticSnapshot()?.metadata?.name != null) {
+        document.title = `Status for ${staticSnapshot()?.metadata.name} | Semyi`;
+        break;
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
   });
 
   onCleanup(() => {
