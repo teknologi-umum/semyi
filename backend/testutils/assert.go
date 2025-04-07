@@ -26,9 +26,14 @@ func AssertNotEqual(t *testing.T, expected, actual interface{}, msg string) {
 // AssertNil checks if a value is nil
 func AssertNil(t *testing.T, actual interface{}, msg string) {
 	t.Helper()
-	if actual != nil {
-		t.Errorf("%s\nExpected: nil\nActual: %v", msg, actual)
+	if actual == nil {
+		return
 	}
+	val := reflect.ValueOf(actual)
+	if val.Kind() == reflect.Ptr && val.IsNil() {
+		return
+	}
+	t.Errorf("%s\nExpected: nil\nActual: %v", msg, actual)
 }
 
 // AssertNotNil checks if a value is not nil
@@ -140,8 +145,45 @@ func AssertNotEmpty(t *testing.T, actual string, msg string) {
 // AssertNotZero checks if a value is not zero
 func AssertNotZero(t *testing.T, actual interface{}, msg string) {
 	t.Helper()
-	zero := reflect.Zero(reflect.TypeOf(actual)).Interface()
-	if reflect.DeepEqual(actual, zero) {
-		t.Errorf("%s: expected non-zero value, got zero", msg)
+	if actual == nil {
+		t.Errorf("%s: expected non-zero value, got nil", msg)
+		return
+	}
+
+	val := reflect.ValueOf(actual)
+	switch val.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		if val.Int() == 0 {
+			t.Errorf("%s: expected non-zero value, got zero", msg)
+		}
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		if val.Uint() == 0 {
+			t.Errorf("%s: expected non-zero value, got zero", msg)
+		}
+	case reflect.Float32, reflect.Float64:
+		if val.Float() == 0 {
+			t.Errorf("%s: expected non-zero value, got zero", msg)
+		}
+	case reflect.String:
+		if val.String() == "" {
+			t.Errorf("%s: expected non-zero value, got empty string", msg)
+		}
+	case reflect.Slice, reflect.Map, reflect.Chan:
+		if val.Len() == 0 {
+			t.Errorf("%s: expected non-zero value, got empty %v", msg, val.Kind())
+		}
+	case reflect.Ptr:
+		if val.IsNil() {
+			t.Errorf("%s: expected non-zero value, got nil pointer", msg)
+		}
+	case reflect.Interface:
+		if val.IsNil() {
+			t.Errorf("%s: expected non-zero value, got nil interface", msg)
+		}
+	default:
+		zero := reflect.Zero(val.Type()).Interface()
+		if reflect.DeepEqual(actual, zero) {
+			t.Errorf("%s: expected non-zero value, got zero", msg)
+		}
 	}
 }
