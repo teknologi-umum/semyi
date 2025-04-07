@@ -84,7 +84,7 @@ func (m *Processor) ProcessResponse(ctx context.Context, response Response) {
 
 	go func() {
 		if m.TelegramAlertProvider == nil && m.DiscordAlertProvider == nil && m.HTTPAlertProvider == nil && m.SlackAlertProvider == nil {
-			log.Warn().Msg("no alert providers are set")
+			log.Warn().Msg("no alert providers are set, skipping alert")
 			return
 		}
 

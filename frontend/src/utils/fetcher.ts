@@ -28,11 +28,16 @@ export async function fetchAllStaticSnapshots(
           },
         });
 
-        const response: Response[] = await Promise.all(
-          urls.map((u) =>
-            fetch(`${BASE_URL}/api/static?id=${u}&interval=${interval}`, { signal }).then((r) => r.json()),
-          ),
-        );
+        let response: Response[];
+        if (urls.length > 0) {
+          response = await Promise.all(
+            urls.map((u) =>
+              fetch(`${BASE_URL}/api/static?id=${u}&interval=${interval}`, { signal }).then((r) => r.json()),
+            ),
+          );
+        } else {
+          response = await fetch(`${BASE_URL}/api/static?interval=${interval}`, { signal }).then((r) => r.json());
+        }
 
         return response;
       } catch (err) {
