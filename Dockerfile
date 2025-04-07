@@ -11,7 +11,7 @@ COPY config.json /config.json
 RUN go build -ldflags="-X 'main.release=$(git describe --tags --always)'" -o semyi .
 
 FROM debian:bookworm
-ENV ENV=production
+ENV ENVIRONMENT=production
 ENV STATIC_PATH=/app/src/dist
 ENV CONFIG_PATH=/data/config.json
 ENV DB_PATH=/data/db.duckdb

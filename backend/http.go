@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/getsentry/sentry-go"
+	sentryhttp "github.com/getsentry/sentry-go/http"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/rs/cors"
@@ -72,8 +73,10 @@ func NewServer(config ServerConfig) *http.Server {
 	})
 
 	api := chi.NewRouter()
+	api.Use(middleware.Heartbeat("/_healthz"))
 	api.Use(corsMiddleware.Handler)
 	api.Use(middleware.RequestID)
+	api.Use(sentryhttp.New(sentryhttp.Options{}).Handle)
 	api.Get("/api/overview", server.snapshotOverview)
 	api.Get("/api/by", server.snapshotBy)
 	api.Get("/api/static", server.staticSnapshot)

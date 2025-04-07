@@ -21,6 +21,11 @@ services:
     volumes:
       - "./config.json:/data/config.json"
       - "./db.duckdb:/data/db.duckdb"
+    healthcheck:
+      test: "curl http://localhost:5000/api/_healthz
+      retries: 3
+      interval: 15s
+      timeout: 10s
 ```
 
 ### Environment Variables
