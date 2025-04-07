@@ -390,7 +390,7 @@ func (s *Server) StaticSnapshot(w http.ResponseWriter, r *http.Request) {
 		var monitorHistorical []MonitorHistorical
 		switch interval {
 		case "raw":
-			monitorHistorical, err = s.HistoricalReader.ReadRawHistorical(ctx, monitorId)
+			monitorHistorical, err = s.HistoricalReader.ReadRawHistorical(ctx, monitor.UniqueID)
 			if err != nil {
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusInternalServerError)
@@ -399,7 +399,7 @@ func (s *Server) StaticSnapshot(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		case "hourly":
-			monitorHistorical, err = s.HistoricalReader.ReadHourlyHistorical(ctx, monitorId)
+			monitorHistorical, err = s.HistoricalReader.ReadHourlyHistorical(ctx, monitor.UniqueID)
 			if err != nil {
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusInternalServerError)
@@ -408,7 +408,7 @@ func (s *Server) StaticSnapshot(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		case "daily":
-			monitorHistorical, err = s.HistoricalReader.ReadDailyHistorical(ctx, monitorId)
+			monitorHistorical, err = s.HistoricalReader.ReadDailyHistorical(ctx, monitor.UniqueID)
 			if err != nil {
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusInternalServerError)
