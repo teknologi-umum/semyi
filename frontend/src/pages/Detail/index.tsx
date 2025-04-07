@@ -96,14 +96,18 @@ export default function DetailPage() {
                   <td class={styles["detail__metadata-title"]}>Name:</td>
                   <td class={styles["detail__metadata-value"]}>{staticSnapshot()?.metadata.name}</td>
                 </tr>
-                <tr>
-                  <td class={styles["detail__metadata-title"]}>URL:</td>
-                  <td class={styles["detail__metadata-value"]}>{staticSnapshot()?.metadata.public_url}</td>
-                </tr>
-                <tr>
-                  <td class={styles["detail__metadata-title"]}>Description:</td>
-                  <td class={styles["detail__metadata-value"]}>{staticSnapshot()?.metadata.description}</td>
-                </tr>
+                {staticSnapshot()?.metadata.public_url != null && (
+                  <tr>
+                    <td class={styles["detail__metadata-title"]}>URL:</td>
+                    <td class={styles["detail__metadata-value"]}>{staticSnapshot()?.metadata.public_url}</td>
+                  </tr>
+                )}
+                {staticSnapshot()?.metadata.description != null && (
+                  <tr>
+                    <td class={styles["detail__metadata-title"]}>Description:</td>
+                    <td class={styles["detail__metadata-value"]}>{staticSnapshot()?.metadata.description}</td>
+                  </tr>
+                )}
               </tbody>
             </table>
             <EndpointStatusCard
