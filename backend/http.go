@@ -28,8 +28,9 @@ type Server struct {
 	IncidentWriter   *IncidentWriter
 	Monitors         []Monitor
 	Processor        *Processor
+	APIKey           string
 
-	APIKey string
+	monitorIds []string
 }
 
 type ServerConfig struct {
@@ -48,6 +49,11 @@ type ServerConfig struct {
 }
 
 func NewServer(config ServerConfig) *http.Server {
+	monitorIds := make([]string, len(config.MonitorList))
+	for i, monitor := range config.MonitorList {
+		monitorIds[i] = monitor.UniqueID
+	}
+
 	server := &Server{
 		HistoricalReader: config.MonitorHistoricalReader,
 		HistoricalWriter: config.MonitorHistoricalWriter,
@@ -55,8 +61,8 @@ func NewServer(config ServerConfig) *http.Server {
 		Monitors:         config.MonitorList,
 		IncidentWriter:   config.IncidentWriter,
 		Processor:        nil,
-
-		APIKey: config.ApiKey,
+		APIKey:           config.ApiKey,
+		monitorIds:       monitorIds,
 	}
 
 	secureMiddleware := secure.New(secure.Options{
@@ -74,7 +80,6 @@ func NewServer(config ServerConfig) *http.Server {
 
 	api := chi.NewRouter()
 	api.Use(middleware.Heartbeat("/_healthz"))
-	api.Use(corsMiddleware.Handler)
 	api.Use(middleware.RequestID)
 	api.Use(sentryhttp.New(sentryhttp.Options{}).Handle)
 	api.Get("/api/overview", server.SnapshotOverview)
@@ -162,7 +167,7 @@ func (s *Server) SnapshotOverview(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 
 	log.Debug().Str("request_id", requestId).Str("component", "snapshotOverview").Msg("snapshot overview server-sent-event requested, trying to subscribe to endpoints")
-	subscriber, err := NewSubscriber(s.CentralBroker, monitorIds...)
+	subscriber, err := NewSubscriber(s.CentralBroker, s.monitorIds...)
 	if err != nil {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusInternalServerError)
@@ -238,7 +243,7 @@ func (s *Server) SnapshotBy(w http.ResponseWriter, r *http.Request) {
 	wantedMonitorIds := strings.Split(ids, ",")
 
 	for _, id := range wantedMonitorIds {
-		if !slices.Contains(monitorIds, id) {
+		if !slices.Contains(s.monitorIds, id) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusBadRequest)
 			_ = json.NewEncoder(w).Encode(HttpCommonError{Error: "id is not in the list of monitors"})
@@ -322,7 +327,7 @@ func (s *Server) StaticSnapshot(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if monitorId != "" {
-		if !slices.Contains(monitorIds, monitorId) {
+		if !slices.Contains(s.monitorIds, monitorId) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusBadRequest)
 			_ = json.NewEncoder(w).Encode(HttpCommonError{Error: "id is not in the list of monitors"})
@@ -334,7 +339,7 @@ func (s *Server) StaticSnapshot(w http.ResponseWriter, r *http.Request) {
 		var monitorHistorical []MonitorHistorical
 		switch interval {
 		case "raw":
-			monitorHistorical, err = s.historicalReader.ReadRawHistorical(ctx, monitorId)
+			monitorHistorical, err = s.HistoricalReader.ReadRawHistorical(ctx, monitorId)
 			if err != nil {
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusInternalServerError)
@@ -343,7 +348,7 @@ func (s *Server) StaticSnapshot(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		case "hourly":
-			monitorHistorical, err = s.historicalReader.ReadHourlyHistorical(ctx, monitorId)
+			monitorHistorical, err = s.HistoricalReader.ReadHourlyHistorical(ctx, monitorId)
 			if err != nil {
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusInternalServerError)
@@ -352,7 +357,7 @@ func (s *Server) StaticSnapshot(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		case "daily":
-			monitorHistorical, err = s.historicalReader.ReadDailyHistorical(ctx, monitorId)
+			monitorHistorical, err = s.HistoricalReader.ReadDailyHistorical(ctx, monitorId)
 			if err != nil {
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusInternalServerError)
@@ -499,7 +504,7 @@ func (s *Server) PushHealthcheck(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !slices.Contains(monitorIds, monitorId) {
+	if !slices.Contains(s.monitorIds, monitorId) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusBadRequest)
 		_ = json.NewEncoder(w).Encode(HttpCommonError{Error: "monitor_id is not in the list of monitors"})

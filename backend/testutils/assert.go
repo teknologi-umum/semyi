@@ -4,6 +4,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 )
 
 // AssertEqual checks if two values are equal
@@ -73,62 +74,50 @@ func AssertNoError(t *testing.T, err error, msg string) {
 // AssertGreater checks if a value is greater than another
 func AssertGreater(t *testing.T, expected, actual interface{}, msg string) {
 	t.Helper()
-	val1 := reflect.ValueOf(expected)
-	val2 := reflect.ValueOf(actual)
-
-	if !val1.CanConvert(val2.Type()) {
-		t.Errorf("%s\nCannot compare values of different types: %T and %T", msg, expected, actual)
-		return
-	}
-
-	val2 = val2.Convert(val1.Type())
-
-	switch val1.Kind() {
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		if val1.Int() >= val2.Int() {
-			t.Errorf("%s\nExpected: greater than %v\nActual: %v", msg, expected, actual)
+	switch v := actual.(type) {
+	case int:
+		if v <= expected.(int) {
+			t.Errorf("%s: expected greater than %v, got %v", msg, expected, actual)
 		}
-	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		if val1.Uint() >= val2.Uint() {
-			t.Errorf("%s\nExpected: greater than %v\nActual: %v", msg, expected, actual)
+	case int64:
+		if v <= expected.(int64) {
+			t.Errorf("%s: expected greater than %v, got %v", msg, expected, actual)
 		}
-	case reflect.Float32, reflect.Float64:
-		if val1.Float() >= val2.Float() {
-			t.Errorf("%s\nExpected: greater than %v\nActual: %v", msg, expected, actual)
+	case float64:
+		if v <= expected.(float64) {
+			t.Errorf("%s: expected greater than %v, got %v", msg, expected, actual)
+		}
+	case time.Duration:
+		if v <= expected.(time.Duration) {
+			t.Errorf("%s: expected greater than %v, got %v", msg, expected, actual)
 		}
 	default:
-		t.Errorf("%s\nCannot compare non-numeric types: %T and %T", msg, expected, actual)
+		t.Errorf("%s: unsupported type for comparison: %T", msg, actual)
 	}
 }
 
 // AssertLessOrEqual checks if a value is less than or equal to another
 func AssertLessOrEqual(t *testing.T, expected, actual interface{}, msg string) {
 	t.Helper()
-	val1 := reflect.ValueOf(expected)
-	val2 := reflect.ValueOf(actual)
-
-	if !val1.CanConvert(val2.Type()) {
-		t.Errorf("%s\nCannot compare values of different types: %T and %T", msg, expected, actual)
-		return
-	}
-
-	val2 = val2.Convert(val1.Type())
-
-	switch val1.Kind() {
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		if val1.Int() < val2.Int() {
-			t.Errorf("%s\nExpected: less than or equal to %v\nActual: %v", msg, expected, actual)
+	switch v := actual.(type) {
+	case int:
+		if v > expected.(int) {
+			t.Errorf("%s: expected less than or equal to %v, got %v", msg, expected, actual)
 		}
-	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		if val1.Uint() < val2.Uint() {
-			t.Errorf("%s\nExpected: less than or equal to %v\nActual: %v", msg, expected, actual)
+	case int64:
+		if v > expected.(int64) {
+			t.Errorf("%s: expected less than or equal to %v, got %v", msg, expected, actual)
 		}
-	case reflect.Float32, reflect.Float64:
-		if val1.Float() < val2.Float() {
-			t.Errorf("%s\nExpected: less than or equal to %v\nActual: %v", msg, expected, actual)
+	case float64:
+		if v > expected.(float64) {
+			t.Errorf("%s: expected less than or equal to %v, got %v", msg, expected, actual)
+		}
+	case time.Duration:
+		if v > expected.(time.Duration) {
+			t.Errorf("%s: expected less than or equal to %v, got %v", msg, expected, actual)
 		}
 	default:
-		t.Errorf("%s\nCannot compare non-numeric types: %T and %T", msg, expected, actual)
+		t.Errorf("%s: unsupported type for comparison: %T", msg, actual)
 	}
 }
 
@@ -137,5 +126,22 @@ func AssertContains(t *testing.T, str, substr string, msg string) {
 	t.Helper()
 	if !strings.Contains(str, substr) {
 		t.Errorf("%s\nExpected string to contain: %q\nActual: %q", msg, substr, str)
+	}
+}
+
+// AssertNotEmpty checks if a string is not empty
+func AssertNotEmpty(t *testing.T, actual string, msg string) {
+	t.Helper()
+	if actual == "" {
+		t.Errorf("%s: expected non-empty string, got empty", msg)
+	}
+}
+
+// AssertNotZero checks if a value is not zero
+func AssertNotZero(t *testing.T, actual interface{}, msg string) {
+	t.Helper()
+	zero := reflect.Zero(reflect.TypeOf(actual)).Interface()
+	if reflect.DeepEqual(actual, zero) {
+		t.Errorf("%s: expected non-zero value, got zero", msg)
 	}
 }
