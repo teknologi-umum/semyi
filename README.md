@@ -42,6 +42,7 @@ services:
 - `BACKEND_SENTRY_DSN`: Sentry DSN for backend (default to empty string which disables Sentry)
 - `BACKEND_SENTRY_SAMPLE_RATE`: Sentry sample rate for errors (default: `1.0`)
 - `BACKEND_SENTRY_TRACES_SAMPLE_RATE`: Sentry sample rate for tracing (default: `1.0`)
+- `ENABLE_DUMP_FAILURE_RESPONSE`: Enable dumping response data if healthcheck failure occures (default: `false`)
 
 ### Configuration Files
 

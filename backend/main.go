@@ -80,11 +80,9 @@ func main() {
 		log.Warn().Msg("API_KEY is not set")
 	}
 
-	if os.Getenv("ENV") == "" {
-		err := os.Setenv("ENV", "development")
-		if err != nil {
-			log.Fatal().Err(err).Msg("Error setting ENV")
-		}
+	enableDumpFailureResponse := false
+	if value, ok := os.LookupEnv("ENABLE_DUMP_FAILURE_RESPONSE"); ok {
+		enableDumpFailureResponse, _ = strconv.ParseBool(value)
 	}
 
 	sentrySampleRate := 1.0
@@ -228,7 +226,7 @@ func main() {
 	for _, monitor := range config.Monitors {
 		monitorIds = append(monitorIds, monitor.UniqueID)
 
-		worker, err := NewWorker(monitor, processor)
+		worker, err := NewWorker(monitor, processor, enableDumpFailureResponse)
 		if err != nil {
 			log.Fatal().Err(err).Msg("Failed to create worker")
 		}

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/http/httputil"
 	"strconv"
 	"strings"
 	"time"
@@ -25,12 +26,13 @@ type Response struct {
 // Worker should only run checks for a single monitor, with specific type (HTTP or ICMP monitor).
 // For each monitor result (success or fail), it should push the result into the monitor processor.
 type Worker struct {
-	monitor          Monitor
-	processor        *Processor
-	historicalReader *MonitorHistoricalReader
+	monitor                   Monitor
+	processor                 *Processor
+	historicalReader          *MonitorHistoricalReader
+	enableDumpFailureResponse bool
 }
 
-func NewWorker(monitor Monitor, processor *Processor) (*Worker, error) {
+func NewWorker(monitor Monitor, processor *Processor, enableDumpFailureResponse bool) (*Worker, error) {
 	// Validate the monitor
 	_, err := monitor.Validate()
 	if err != nil {
@@ -59,8 +61,9 @@ func NewWorker(monitor Monitor, processor *Processor) (*Worker, error) {
 	}
 
 	return &Worker{
-		monitor:   monitor,
-		processor: processor,
+		monitor:                   monitor,
+		processor:                 processor,
+		enableDumpFailureResponse: enableDumpFailureResponse,
 	}, nil
 }
 
@@ -223,9 +226,20 @@ func (w *Worker) makeHttpRequest(ctx context.Context) (Response, error) {
 		}, fmt.Errorf("failed to make request: %w", err)
 	}
 
+	expectedStatusCode := w.parseExpectedStatusCode(resp.StatusCode)
 	timeEnd := time.Now().UnixMilli()
+
+	if !expectedStatusCode && w.enableDumpFailureResponse {
+		dumpRequest, _ := httputil.DumpRequest(req, true)
+		dumpResponse, _ := httputil.DumpResponse(resp, true)
+		log.Debug().Str("monitor_id", w.monitor.UniqueID).
+			Bytes("request", dumpRequest).
+			Bytes("response", dumpResponse).
+			Msg("dumping failure response")
+	}
+
 	return Response{
-		Success:         w.parseExpectedStatusCode(resp.StatusCode),
+		Success:         expectedStatusCode,
 		StatusCode:      resp.StatusCode,
 		RequestDuration: timeEnd - timeStart,
 		Timestamp:       time.Now().UTC(),
