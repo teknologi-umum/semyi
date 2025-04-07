@@ -22,14 +22,15 @@ import (
 )
 
 type Server struct {
-	historicalWriter *MonitorHistoricalWriter
-	historicalReader *MonitorHistoricalReader
-	centralBroker    *Broker[MonitorHistorical]
-	incidentWriter   *IncidentWriter
-	monitors         []Monitor
-	processor        *Processor
+	HistoricalWriter *MonitorHistoricalWriter
+	HistoricalReader *MonitorHistoricalReader
+	CentralBroker    *Broker[MonitorHistorical]
+	IncidentWriter   *IncidentWriter
+	Monitors         []Monitor
+	Processor        *Processor
+	APIKey           string
 
-	apiKey string
+	monitorIds []string
 }
 
 type ServerConfig struct {
@@ -48,15 +49,20 @@ type ServerConfig struct {
 }
 
 func NewServer(config ServerConfig) *http.Server {
-	server := &Server{
-		historicalReader: config.MonitorHistoricalReader,
-		historicalWriter: config.MonitorHistoricalWriter,
-		centralBroker:    config.CentralBroker,
-		monitors:         config.MonitorList,
-		incidentWriter:   config.IncidentWriter,
-		processor:        nil,
+	monitorIds := make([]string, len(config.MonitorList))
+	for i, monitor := range config.MonitorList {
+		monitorIds[i] = monitor.UniqueID
+	}
 
-		apiKey: config.ApiKey,
+	server := &Server{
+		HistoricalReader: config.MonitorHistoricalReader,
+		HistoricalWriter: config.MonitorHistoricalWriter,
+		CentralBroker:    config.CentralBroker,
+		Monitors:         config.MonitorList,
+		IncidentWriter:   config.IncidentWriter,
+		Processor:        nil,
+		APIKey:           config.ApiKey,
+		monitorIds:       monitorIds,
 	}
 
 	secureMiddleware := secure.New(secure.Options{
@@ -74,21 +80,20 @@ func NewServer(config ServerConfig) *http.Server {
 
 	api := chi.NewRouter()
 	api.Use(middleware.Heartbeat("/_healthz"))
-	api.Use(corsMiddleware.Handler)
 	api.Use(middleware.RequestID)
 	api.Use(sentryhttp.New(sentryhttp.Options{}).Handle)
-	api.Get("/api/overview", server.snapshotOverview)
-	api.Get("/api/by", server.snapshotBy)
-	api.Get("/api/static", server.staticSnapshot)
-	api.Post("/api/incident", server.submitIncindent)
-	api.Get("/api/push/{monitor_id}", server.pushHealthcheck)
+	api.Get("/api/overview", server.SnapshotOverview)
+	api.Get("/api/by", server.SnapshotBy)
+	api.Get("/api/static", server.StaticSnapshot)
+	api.Post("/api/incident", server.SubmitIncident)
+	api.Get("/api/push/{monitor_id}", server.PushHealthcheck)
 
 	r := chi.NewRouter()
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.RealIP)
 	r.Use(secureMiddleware.Handler)
 	r.Handle("/api/*", corsMiddleware.Handler(api))
-	r.Handle("/*", server.spaHandler(config.StaticPath))
+	r.Handle("/*", server.SpaHandler(config.StaticPath))
 
 	return &http.Server{
 		Addr:    net.JoinHostPort(config.Hostname, config.Port),
@@ -96,8 +101,8 @@ func NewServer(config ServerConfig) *http.Server {
 	}
 }
 
-// spaHandler serves a single page application.
-func (s *Server) spaHandler(staticPath string) http.HandlerFunc {
+// SpaHandler serves a single page application.
+func (s *Server) SpaHandler(staticPath string) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Join internally call path.Clean to prevent directory traversal
 		path := filepath.Join(staticPath, r.URL.Path)
@@ -133,7 +138,7 @@ func (s *Server) spaHandler(staticPath string) http.HandlerFunc {
 	})
 }
 
-func (s *Server) snapshotOverview(w http.ResponseWriter, r *http.Request) {
+func (s *Server) SnapshotOverview(w http.ResponseWriter, r *http.Request) {
 	requestId := middleware.GetReqID(r.Context())
 	ctx := r.Context()
 
@@ -162,7 +167,7 @@ func (s *Server) snapshotOverview(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 
 	log.Debug().Str("request_id", requestId).Str("component", "snapshotOverview").Msg("snapshot overview server-sent-event requested, trying to subscribe to endpoints")
-	subscriber, err := NewSubscriber(s.centralBroker, monitorIds...)
+	subscriber, err := NewSubscriber(s.CentralBroker, s.monitorIds...)
 	if err != nil {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusInternalServerError)
@@ -204,7 +209,7 @@ func (s *Server) snapshotOverview(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *Server) snapshotBy(w http.ResponseWriter, r *http.Request) {
+func (s *Server) SnapshotBy(w http.ResponseWriter, r *http.Request) {
 	requestId := middleware.GetReqID(r.Context())
 	ctx := r.Context()
 
@@ -238,7 +243,7 @@ func (s *Server) snapshotBy(w http.ResponseWriter, r *http.Request) {
 	wantedMonitorIds := strings.Split(ids, ",")
 
 	for _, id := range wantedMonitorIds {
-		if !slices.Contains(monitorIds, id) {
+		if !slices.Contains(s.monitorIds, id) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusBadRequest)
 			_ = json.NewEncoder(w).Encode(HttpCommonError{Error: "id is not in the list of monitors"})
@@ -252,7 +257,7 @@ func (s *Server) snapshotBy(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 
 	log.Debug().Str("wanted_monitor_ids", ids).Str("request_id", requestId).Str("component", "snapshotBy").Msg("snapshot by server-sent-event requested, trying to subscribe to endpoints")
-	sub, err := NewSubscriber(s.centralBroker, wantedMonitorIds...)
+	sub, err := NewSubscriber(s.CentralBroker, wantedMonitorIds...)
 	if err != nil {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusInternalServerError)
@@ -294,7 +299,7 @@ func (s *Server) snapshotBy(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *Server) staticSnapshot(w http.ResponseWriter, r *http.Request) {
+func (s *Server) StaticSnapshot(w http.ResponseWriter, r *http.Request) {
 	monitorId := r.URL.Query().Get("id")
 	ctx := r.Context()
 
@@ -322,7 +327,7 @@ func (s *Server) staticSnapshot(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if monitorId != "" {
-		if !slices.Contains(monitorIds, monitorId) {
+		if !slices.Contains(s.monitorIds, monitorId) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusBadRequest)
 			_ = json.NewEncoder(w).Encode(HttpCommonError{Error: "id is not in the list of monitors"})
@@ -334,7 +339,7 @@ func (s *Server) staticSnapshot(w http.ResponseWriter, r *http.Request) {
 		var monitorHistorical []MonitorHistorical
 		switch interval {
 		case "raw":
-			monitorHistorical, err = s.historicalReader.ReadRawHistorical(ctx, monitorId)
+			monitorHistorical, err = s.HistoricalReader.ReadRawHistorical(ctx, monitorId)
 			if err != nil {
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusInternalServerError)
@@ -343,7 +348,7 @@ func (s *Server) staticSnapshot(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		case "hourly":
-			monitorHistorical, err = s.historicalReader.ReadHourlyHistorical(ctx, monitorId)
+			monitorHistorical, err = s.HistoricalReader.ReadHourlyHistorical(ctx, monitorId)
 			if err != nil {
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusInternalServerError)
@@ -352,7 +357,7 @@ func (s *Server) staticSnapshot(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		case "daily":
-			monitorHistorical, err = s.historicalReader.ReadDailyHistorical(ctx, monitorId)
+			monitorHistorical, err = s.HistoricalReader.ReadDailyHistorical(ctx, monitorId)
 			if err != nil {
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusInternalServerError)
@@ -363,7 +368,7 @@ func (s *Server) staticSnapshot(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Acquire monitor metadata
-		for _, m := range s.monitors {
+		for _, m := range s.Monitors {
 			if m.UniqueID == monitorId {
 				monitor = m
 				break
@@ -380,12 +385,12 @@ func (s *Server) staticSnapshot(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var staticSnapshotResponse []StaticSnapshotResponse
-	for _, monitor := range s.monitors {
+	for _, monitor := range s.Monitors {
 		var err error
 		var monitorHistorical []MonitorHistorical
 		switch interval {
 		case "raw":
-			monitorHistorical, err = s.historicalReader.ReadRawHistorical(ctx, monitor.UniqueID)
+			monitorHistorical, err = s.HistoricalReader.ReadRawHistorical(ctx, monitor.UniqueID)
 			if err != nil {
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusInternalServerError)
@@ -394,7 +399,7 @@ func (s *Server) staticSnapshot(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		case "hourly":
-			monitorHistorical, err = s.historicalReader.ReadHourlyHistorical(ctx, monitor.UniqueID)
+			monitorHistorical, err = s.HistoricalReader.ReadHourlyHistorical(ctx, monitor.UniqueID)
 			if err != nil {
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusInternalServerError)
@@ -403,7 +408,7 @@ func (s *Server) staticSnapshot(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		case "daily":
-			monitorHistorical, err = s.historicalReader.ReadDailyHistorical(ctx, monitor.UniqueID)
+			monitorHistorical, err = s.HistoricalReader.ReadDailyHistorical(ctx, monitor.UniqueID)
 			if err != nil {
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusInternalServerError)
@@ -424,7 +429,7 @@ func (s *Server) staticSnapshot(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(staticSnapshotResponse)
 }
 
-func (s *Server) submitIncindent(w http.ResponseWriter, r *http.Request) {
+func (s *Server) SubmitIncident(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	// Add breadcrumb for request
@@ -437,7 +442,7 @@ func (s *Server) submitIncindent(w http.ResponseWriter, r *http.Request) {
 		},
 	})
 
-	if s.apiKey != "" {
+	if s.APIKey != "" {
 		apiKey := r.Header.Get("X-API-Key")
 		if apiKey == "" {
 			w.Header().Set("Content-Type", "application/json")
@@ -446,7 +451,7 @@ func (s *Server) submitIncindent(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if apiKey != s.apiKey {
+		if apiKey != s.APIKey {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusUnauthorized)
 			_ = json.NewEncoder(w).Encode(HttpCommonError{Error: "invalid X-API-Key"})
@@ -464,7 +469,7 @@ func (s *Server) submitIncindent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = s.incidentWriter.Write(ctx, incident)
+	err = s.IncidentWriter.Write(ctx, incident)
 	if err != nil {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusInternalServerError)
@@ -478,7 +483,7 @@ func (s *Server) submitIncindent(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(HttpCommonSuccess{Message: "success"})
 }
 
-func (s *Server) pushHealthcheck(w http.ResponseWriter, r *http.Request) {
+func (s *Server) PushHealthcheck(w http.ResponseWriter, r *http.Request) {
 	monitorId := chi.URLParam(r, "monitor_id")
 
 	// Add breadcrumb for request
@@ -499,7 +504,7 @@ func (s *Server) pushHealthcheck(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !slices.Contains(monitorIds, monitorId) {
+	if !slices.Contains(s.monitorIds, monitorId) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusBadRequest)
 		_ = json.NewEncoder(w).Encode(HttpCommonError{Error: "monitor_id is not in the list of monitors"})
@@ -507,7 +512,7 @@ func (s *Server) pushHealthcheck(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var monitor Monitor
-	for _, m := range s.monitors {
+	for _, m := range s.Monitors {
 		if m.UniqueID == monitorId {
 			monitor = m
 			break
@@ -536,7 +541,7 @@ func (s *Server) pushHealthcheck(w http.ResponseWriter, r *http.Request) {
 		Monitor:         monitor,
 	}
 
-	go s.processor.ProcessResponse(context.WithoutCancel(r.Context()), response)
+	go s.Processor.ProcessResponse(context.WithoutCancel(r.Context()), response)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)

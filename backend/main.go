@@ -189,14 +189,14 @@ func main() {
 	aggregateWorker := NewAggregateWorker(monitorIds, monitorHistoricalReader, monitorHistoricalWriter)
 
 	processor := &Processor{
-		historicalWriter: monitorHistoricalWriter,
-		historicalReader: monitorHistoricalReader,
-		centralBroker:    centralBroker,
+		HistoricalWriter: monitorHistoricalWriter,
+		HistoricalReader: monitorHistoricalReader,
+		CentralBroker:    centralBroker,
 	}
 
 	// Initialize alert providers if enabled
 	if config.Alerting.Telegram.Enabled && config.Alerting.Telegram.URL != "" && config.Alerting.Telegram.ChatID != "" {
-		processor.telegramAlertProvider = NewTelegramAlertProvider(TelegramProviderConfig{
+		processor.TelegramAlertProvider = NewTelegramAlertProvider(TelegramProviderConfig{
 			Url:        config.Alerting.Telegram.URL,
 			ChatID:     config.Alerting.Telegram.ChatID,
 			HttpClient: httpClient,
@@ -204,21 +204,21 @@ func main() {
 	}
 
 	if config.Alerting.Discord.Enabled && config.Alerting.Discord.WebhookURL != "" {
-		processor.discordAlertProvider = NewDiscordAlertProvider(DiscordProviderConfig{
+		processor.DiscordAlertProvider = NewDiscordAlertProvider(DiscordProviderConfig{
 			WebhookURL: config.Alerting.Discord.WebhookURL,
 			HttpClient: httpClient,
 		})
 	}
 
 	if config.Alerting.HTTP.Enabled && config.Alerting.HTTP.WebhookURL != "" {
-		processor.httpAlertProvider = NewHTTPAlertProvider(HTTPProviderConfig{
+		processor.HTTPAlertProvider = NewHTTPAlertProvider(HTTPProviderConfig{
 			WebhookURL: config.Alerting.HTTP.WebhookURL,
 			HttpClient: httpClient,
 		})
 	}
 
 	if config.Alerting.Slack.Enabled && config.Alerting.Slack.WebhookURL != "" {
-		processor.slackAlertProvider = NewSlackAlertProvider(SlackProviderConfig{
+		processor.SlackAlertProvider = NewSlackAlertProvider(SlackProviderConfig{
 			WebhookURL: config.Alerting.Slack.WebhookURL,
 			HttpClient: httpClient,
 		})

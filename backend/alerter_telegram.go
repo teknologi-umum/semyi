@@ -82,9 +82,14 @@ func (t *TelegramProvider) Send(ctx context.Context, msg AlertMessage) error {
 
 	req.Header.Set("Content-Type", "application/json")
 
-	_, err = t.httpClient.Do(req)
+	resp, err := t.httpClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("failed to make request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("telegram API returned non-200 status code: %d", resp.StatusCode)
 	}
 
 	return nil

@@ -11,14 +11,13 @@ import (
 )
 
 type Processor struct {
-	historicalWriter *MonitorHistoricalWriter
-	historicalReader *MonitorHistoricalReader
-	centralBroker    *Broker[MonitorHistorical]
-
-	telegramAlertProvider Alerter
-	discordAlertProvider  Alerter
-	httpAlertProvider     Alerter
-	slackAlertProvider    Alerter
+	HistoricalWriter      *MonitorHistoricalWriter
+	HistoricalReader      *MonitorHistoricalReader
+	CentralBroker         *Broker[MonitorHistorical]
+	TelegramAlertProvider Alerter
+	DiscordAlertProvider  Alerter
+	HTTPAlertProvider     Alerter
+	SlackAlertProvider    Alerter
 }
 
 func (m *Processor) ProcessResponse(ctx context.Context, response Response) {
@@ -61,7 +60,7 @@ func (m *Processor) ProcessResponse(ctx context.Context, response Response) {
 	attemptRemaining := 3
 	attemptedEntries := 0
 	for attemptRemaining > 0 {
-		err := m.historicalWriter.Write(ctx, monitorHistorical)
+		err := m.HistoricalWriter.Write(ctx, monitorHistorical)
 		if err != nil {
 			attemptedEntries++
 			if attemptRemaining == 0 {
@@ -84,7 +83,7 @@ func (m *Processor) ProcessResponse(ctx context.Context, response Response) {
 	}
 
 	go func() {
-		if m.telegramAlertProvider == nil && m.discordAlertProvider == nil && m.httpAlertProvider == nil && m.slackAlertProvider == nil {
+		if m.TelegramAlertProvider == nil && m.DiscordAlertProvider == nil && m.HTTPAlertProvider == nil && m.SlackAlertProvider == nil {
 			log.Warn().Msg("no alert providers are set, skipping alert")
 			return
 		}
@@ -98,78 +97,40 @@ func (m *Processor) ProcessResponse(ctx context.Context, response Response) {
 			Latency:     response.RequestDuration,
 		}
 
-		lastRawHistorical, err := m.historicalReader.ReadRawLatest(ctx, uniqueId)
-		if err != nil {
-			log.Error().Err(err).Msg("failed to get raw latest historical data")
-			sentry.GetHubFromContext(ctx).CaptureException(err)
-			return
-		}
-
-		if lastRawHistorical.Status != status {
-			// Add breadcrumb for alert sending
-			sentry.AddBreadcrumb(&sentry.Breadcrumb{
-				Category: "alert",
-				Message:  fmt.Sprintf("Sending alert for monitor %s", uniqueId),
-				Level:    sentry.LevelInfo,
-				Data: map[string]interface{}{
-					"monitor_id": uniqueId,
-					"provider":   response.Monitor.AlertProvider,
-					"status":     status,
-				},
-			})
-
-			switch response.Monitor.AlertProvider {
-			case AlertProviderTypeTelegram:
-				if m.telegramAlertProvider == nil {
-					log.Warn().Msg("telegram alert provider is not set")
-					return
-				}
-
-				err := m.telegramAlertProvider.Send(ctx, alertMessage)
-				if err != nil {
-					log.Error().Err(err).Msg("failed to send alert")
-					sentry.GetHubFromContext(ctx).CaptureException(err)
-				}
-			case AlertProviderTypeDiscord:
-				if m.discordAlertProvider == nil {
-					log.Warn().Msg("discord alert provider is not set")
-					return
-				}
-
-				err := m.discordAlertProvider.Send(ctx, alertMessage)
-				if err != nil {
-					log.Error().Err(err).Msg("failed to send alert")
-					sentry.GetHubFromContext(ctx).CaptureException(err)
-				}
-			case AlertProviderTypeHTTP:
-				if m.httpAlertProvider == nil {
-					log.Warn().Msg("http alert provider is not set")
-					return
-				}
-
-				err := m.httpAlertProvider.Send(ctx, alertMessage)
-				if err != nil {
-					log.Error().Err(err).Msg("failed to send alert")
-					sentry.GetHubFromContext(ctx).CaptureException(err)
-				}
-			case AlertProviderTypeSlack:
-				if m.slackAlertProvider == nil {
-					log.Warn().Msg("slack alert provider is not set")
-					return
-				}
-
-				err := m.slackAlertProvider.Send(ctx, alertMessage)
-				if err != nil {
-					log.Error().Err(err).Msg("failed to send alert")
-					sentry.GetHubFromContext(ctx).CaptureException(err)
-				}
+		if m.TelegramAlertProvider != nil {
+			err := m.TelegramAlertProvider.Send(ctx, alertMessage)
+			if err != nil {
+				log.Error().Err(err).Msg("failed to send telegram alert")
+				sentry.GetHubFromContext(ctx).CaptureException(err)
 			}
 		}
 
-		// TODO: incident writer
+		if m.DiscordAlertProvider != nil {
+			err := m.DiscordAlertProvider.Send(ctx, alertMessage)
+			if err != nil {
+				log.Error().Err(err).Msg("failed to send discord alert")
+				sentry.GetHubFromContext(ctx).CaptureException(err)
+			}
+		}
+
+		if m.HTTPAlertProvider != nil {
+			err := m.HTTPAlertProvider.Send(ctx, alertMessage)
+			if err != nil {
+				log.Error().Err(err).Msg("failed to send http alert")
+				sentry.GetHubFromContext(ctx).CaptureException(err)
+			}
+		}
+
+		if m.SlackAlertProvider != nil {
+			err := m.SlackAlertProvider.Send(ctx, alertMessage)
+			if err != nil {
+				log.Error().Err(err).Msg("failed to send slack alert")
+				sentry.GetHubFromContext(ctx).CaptureException(err)
+			}
+		}
 	}()
 
-	m.centralBroker.Publish(uniqueId, &BrokerMessage[MonitorHistorical]{
+	m.CentralBroker.Publish(uniqueId, &BrokerMessage[MonitorHistorical]{
 		Header: map[string]string{
 			"monitor_id": uniqueId,
 			"interval":   "raw",
