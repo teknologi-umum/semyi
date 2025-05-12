@@ -51,10 +51,15 @@ func (m *Processor) ProcessResponse(ctx context.Context, response Response) {
 	})
 
 	monitorHistorical := MonitorHistorical{
-		MonitorID: uniqueId,
-		Status:    status,
-		Latency:   response.RequestDuration,
-		Timestamp: response.Timestamp,
+		MonitorID:         uniqueId,
+		Status:            status,
+		Latency:           response.RequestDuration,
+		Timestamp:         response.Timestamp,
+		AdditionalMessage: response.AdditionalMessage,
+		HttpProtocol:      response.HttpProtocol,
+		TLSVersion:        response.TLSVersion,
+		TLSCipherName:     response.TLSCipherName,
+		TLSExpiryDate:     response.TLSExpiryDate,
 	}
 
 	attemptRemaining := 3

@@ -21,7 +21,7 @@ export default function DetailPage() {
   }
 
   const [staticSnapshot, { refetch }] = createResource(() =>
-    fetchSingleStaticSnapshot(uniqueId, "raw", abortController.signal),
+    fetchSingleStaticSnapshot(uniqueId, "hourly", abortController.signal),
   );
 
   const source = new EventSource(`${BASE_URL}/api/by?ids=${uniqueId}`);

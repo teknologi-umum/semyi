@@ -49,8 +49,43 @@ func (w *MonitorHistoricalWriter) Write(ctx context.Context, historical MonitorH
 		}
 	}()
 
-	_, err = conn.ExecContext(ctx, "INSERT INTO monitor_historical (monitor_id, status, latency, timestamp) VALUES (?, ?, ?, ?)",
-		historical.MonitorID, uint8(historical.Status), historical.Latency, historical.Timestamp)
+	_, err = conn.ExecContext(
+		ctx,
+		`INSERT INTO
+			monitor_historical
+			(
+				monitor_id,
+				status,
+				latency,
+				timestamp,
+				additional_message,
+				http_protocol,
+				tls_version,
+				tls_cipher,
+				tls_expiry
+			)
+		VALUES
+			(
+				?,
+				?,
+				?,
+				?,
+				?,
+				?,
+				?,
+				?,
+				?
+			)`,
+		historical.MonitorID,
+		uint8(historical.Status),
+		historical.Latency,
+		historical.Timestamp,
+		sql.NullString{String: historical.AdditionalMessage, Valid: historical.AdditionalMessage != ""},
+		sql.NullString{String: historical.HttpProtocol, Valid: historical.HttpProtocol != ""},
+		sql.NullString{String: historical.TLSVersion, Valid: historical.TLSVersion != ""},
+		sql.NullString{String: historical.TLSCipherName, Valid: historical.TLSCipherName != ""},
+		sql.NullTime{Time: historical.TLSExpiryDate, Valid: historical.TLSExpiryDate.IsZero() == false},
+	)
 	if err != nil {
 		return fmt.Errorf("failed to insert historical data: %w", err)
 	}
@@ -100,8 +135,45 @@ func (w *MonitorHistoricalWriter) WriteHourly(ctx context.Context, historical Mo
 		return fmt.Errorf("failed to delete hourly historical data: %w", err)
 	}
 
-	_, err = tx.ExecContext(ctx, "INSERT INTO monitor_historical_hourly_aggregate (monitor_id, status, latency, timestamp, created_at) VALUES (?, ?, ?, ?, ?)",
-		historical.MonitorID, uint8(historical.Status), historical.Latency, historical.Timestamp, time.Now().UTC())
+	_, err = conn.ExecContext(
+		ctx,
+		`INSERT INTO
+			monitor_historical_hourly_aggregate
+			(
+				monitor_id,
+				status,
+				latency,
+				timestamp,
+				created_at,
+				additional_message,
+				http_protocol,
+				tls_version,
+				tls_cipher,
+				tls_expiry
+			)
+		VALUES
+			(
+				?,
+				?,
+				?,
+				?,
+				?,
+				?,
+				?,
+				?,
+				?
+			)`,
+		historical.MonitorID,
+		uint8(historical.Status),
+		historical.Latency,
+		historical.Timestamp,
+		time.Now().UTC(),
+		sql.NullString{String: historical.AdditionalMessage, Valid: historical.AdditionalMessage != ""},
+		sql.NullString{String: historical.HttpProtocol, Valid: historical.HttpProtocol != ""},
+		sql.NullString{String: historical.TLSVersion, Valid: historical.TLSVersion != ""},
+		sql.NullString{String: historical.TLSCipherName, Valid: historical.TLSCipherName != ""},
+		sql.NullTime{Time: historical.TLSExpiryDate, Valid: !historical.TLSExpiryDate.IsZero()},
+	)
 	if err != nil {
 		if rollbackErr := tx.Rollback(); rollbackErr != nil {
 			log.Warn().Err(rollbackErr).Msg("failed to rollback transaction")
@@ -160,8 +232,45 @@ func (w *MonitorHistoricalWriter) WriteDaily(ctx context.Context, historical Mon
 		return fmt.Errorf("failed to delete daily historical data: %w", err)
 	}
 
-	_, err = tx.ExecContext(ctx, "INSERT INTO monitor_historical_daily_aggregate (monitor_id, status, latency, timestamp, created_at) VALUES (?, ?, ?, ?, ?)",
-		historical.MonitorID, uint8(historical.Status), historical.Latency, historical.Timestamp, time.Now().UTC())
+	_, err = conn.ExecContext(
+		ctx,
+		`INSERT INTO
+			monitor_historical_daily_aggregate
+			(
+				monitor_id,
+				status,
+				latency,
+				timestamp,
+				created_at,
+				additional_message,
+				http_protocol,
+				tls_version,
+				tls_cipher,
+				tls_expiry
+			)
+		VALUES
+			(
+				?,
+				?,
+				?,
+				?,
+				?,
+				?,
+				?,
+				?,
+				?
+			)`,
+		historical.MonitorID,
+		uint8(historical.Status),
+		historical.Latency,
+		historical.Timestamp,
+		time.Now().UTC(),
+		sql.NullString{String: historical.AdditionalMessage, Valid: historical.AdditionalMessage != ""},
+		sql.NullString{String: historical.HttpProtocol, Valid: historical.HttpProtocol != ""},
+		sql.NullString{String: historical.TLSVersion, Valid: historical.TLSVersion != ""},
+		sql.NullString{String: historical.TLSCipherName, Valid: historical.TLSCipherName != ""},
+		sql.NullTime{Time: historical.TLSExpiryDate, Valid: !historical.TLSExpiryDate.IsZero()},
+	)
 	if err != nil {
 		if rollbackErr := tx.Rollback(); rollbackErr != nil {
 			log.Warn().Err(rollbackErr).Msg("failed to rollback transaction")

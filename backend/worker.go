@@ -16,10 +16,15 @@ import (
 )
 
 type Response struct {
-	Success         bool      `json:"success"`
-	StatusCode      int       `json:"statusCode"`
-	RequestDuration int64     `json:"requestDuration"`
-	Timestamp       time.Time `json:"timestamp"`
+	Success           bool      `json:"success"`
+	StatusCode        int       `json:"statusCode"`
+	RequestDuration   int64     `json:"requestDuration"`
+	Timestamp         time.Time `json:"timestamp"`
+	AdditionalMessage string    `json:"additionalMessage,omitempty"`
+	HttpProtocol      string    `json:"httpProtocol,omitempty"`
+	TLSVersion        string    `json:"tlsVersion,omitempty"`
+	TLSCipherName     string    `json:"tlsCipherName,omitempty"`
+	TLSExpiryDate     time.Time `json:"tlsExpiryDate,omitempty"`
 	Monitor
 }
 

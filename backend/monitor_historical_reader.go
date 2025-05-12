@@ -34,7 +34,7 @@ func (r *MonitorHistoricalReader) ReadRawHistorical(ctx context.Context, monitor
 		}
 	}()
 
-	query := "SELECT timestamp, monitor_id, status, latency FROM monitor_historical WHERE monitor_id = ? ORDER BY timestamp DESC"
+	query := "SELECT timestamp, monitor_id, status, latency, additional_message, http_protocol, tls_version, tls_cipher, tls_expiry FROM monitor_historical WHERE monitor_id = ? ORDER BY timestamp DESC"
 	if limitResults {
 		query += " LIMIT 100"
 	}
@@ -52,7 +52,7 @@ func (r *MonitorHistoricalReader) ReadRawHistorical(ctx context.Context, monitor
 	var monitorsHistorical []MonitorHistorical
 	for rows.Next() {
 		var row MonitorHistorical
-		err := rows.Scan(&row.Timestamp, &row.MonitorID, &row.Status, &row.Latency)
+		err := rows.Scan(&row.Timestamp, &row.MonitorID, &row.Status, &row.Latency, &row.AdditionalMessage, &row.HttpProtocol, &row.TLSVersion, &row.TLSCipherName, &row.TLSExpiryDate)
 		if err != nil {
 			return []MonitorHistorical{}, fmt.Errorf("failed to scan row")
 		}
@@ -80,7 +80,7 @@ func (r *MonitorHistoricalReader) ReadHourlyHistorical(ctx context.Context, moni
 		}
 	}()
 
-	query := "SELECT timestamp, monitor_id, status, latency FROM monitor_historical_hourly_aggregate WHERE monitor_id = ? ORDER BY timestamp DESC"
+	query := "SELECT timestamp, monitor_id, status, latency, additional_message, http_protocol, tls_version, tls_cipher, tls_expiry FROM monitor_historical_hourly_aggregate WHERE monitor_id = ? ORDER BY timestamp DESC"
 	if limitResults {
 		query += " LIMIT 100"
 	}
@@ -98,7 +98,7 @@ func (r *MonitorHistoricalReader) ReadHourlyHistorical(ctx context.Context, moni
 	var monitorsHistorical []MonitorHistorical
 	for rows.Next() {
 		var row MonitorHistorical
-		err := rows.Scan(&row.Timestamp, &row.MonitorID, &row.Status, &row.Latency)
+		err := rows.Scan(&row.Timestamp, &row.MonitorID, &row.Status, &row.Latency, &row.AdditionalMessage, &row.HttpProtocol, &row.TLSVersion, &row.TLSCipherName, &row.TLSExpiryDate)
 		if err != nil {
 			return []MonitorHistorical{}, fmt.Errorf("failed to scan row")
 		}
@@ -126,7 +126,7 @@ func (r *MonitorHistoricalReader) ReadDailyHistorical(ctx context.Context, monit
 		}
 	}()
 
-	query := "SELECT timestamp, monitor_id, status, latency FROM monitor_historical_daily_aggregate WHERE monitor_id = ? ORDER BY timestamp DESC"
+	query := "SELECT timestamp, monitor_id, status, latency, additional_message, http_protocol, tls_version, tls_cipher, tls_expiry FROM monitor_historical_daily_aggregate WHERE monitor_id = ? ORDER BY timestamp DESC"
 	if limitResults {
 		query += " LIMIT 100"
 	}
@@ -144,7 +144,7 @@ func (r *MonitorHistoricalReader) ReadDailyHistorical(ctx context.Context, monit
 	var monitorsHistorical []MonitorHistorical
 	for rows.Next() {
 		var row MonitorHistorical
-		err := rows.Scan(&row.Timestamp, &row.MonitorID, &row.Status, &row.Latency)
+		err := rows.Scan(&row.Timestamp, &row.MonitorID, &row.Status, &row.Latency, &row.AdditionalMessage, &row.HttpProtocol, &row.TLSVersion, &row.TLSCipherName, &row.TLSExpiryDate)
 		if err != nil {
 			return []MonitorHistorical{}, fmt.Errorf("failed to scan row")
 		}
@@ -174,11 +174,16 @@ func (r *MonitorHistoricalReader) ReadRawLatest(ctx context.Context, monitorId s
 	}()
 
 	var monitorsHistorical MonitorHistorical
-	err = conn.QueryRowContext(ctx, "SELECT timestamp, monitor_id, status, latency FROM monitor_historical WHERE monitor_id = ? ORDER BY timestamp DESC LIMIT 1", monitorId).Scan(
+	err = conn.QueryRowContext(ctx, "SELECT timestamp, monitor_id, status, latency, additional_message, http_protocol, tls_version, tls_cipher, tls_expiry FROM monitor_historical WHERE monitor_id = ? ORDER BY timestamp DESC LIMIT 1", monitorId).Scan(
 		&monitorsHistorical.Timestamp,
 		&monitorsHistorical.MonitorID,
 		&monitorsHistorical.Status,
 		&monitorsHistorical.Latency,
+		&monitorsHistorical.AdditionalMessage,
+		&monitorsHistorical.HttpProtocol,
+		&monitorsHistorical.TLSVersion,
+		&monitorsHistorical.TLSCipherName,
+		&monitorsHistorical.TLSExpiryDate,
 	)
 	if err != nil {
 		return MonitorHistorical{}, fmt.Errorf("failed to read latest raw historical data: %w", err)
