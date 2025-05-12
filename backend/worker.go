@@ -2,8 +2,10 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"net/http/httputil"
 	"strconv"
@@ -219,6 +221,25 @@ func (w *Worker) makeHttpRequest(ctx context.Context) (Response, error) {
 
 	client := &http.Client{
 		Timeout: time.Duration(w.monitor.Timeout) * time.Second,
+		Transport: &http.Transport{
+			// Adapted from http.DefaultTransport
+			Proxy: http.ProxyFromEnvironment,
+			DialContext: (&net.Dialer{
+				Timeout:   30 * time.Second,
+				KeepAlive: 30 * time.Second,
+			}).DialContext,
+			ForceAttemptHTTP2:     true,
+			MaxIdleConns:          100,
+			IdleConnTimeout:       90 * time.Second,
+			TLSHandshakeTimeout:   10 * time.Second,
+			ExpectContinueTimeout: 1 * time.Second,
+			TLSClientConfig: &tls.Config{
+				// TODO: These should be configurable
+				Certificates:       nil,
+				RootCAs:            nil,
+				InsecureSkipVerify: true,
+			},
+		},
 	}
 
 	resp, err := client.Do(req)
@@ -244,18 +265,43 @@ func (w *Worker) makeHttpRequest(ctx context.Context) (Response, error) {
 			Msg("dumping failure response")
 	}
 
+	var additionalMessage, tlsVersion, tlsCipherName string
+	var tlsExpiryDate time.Time
+	if resp.TLS != nil {
+		tlsVersion = tls.VersionName(resp.TLS.Version)
+		tlsCipherName = tls.CipherSuiteName(resp.TLS.CipherSuite)
+
+		if len(resp.TLS.PeerCertificates) > 0 {
+			// According to the Go stdlib docs:
+			// The first element is the leaf certificate that the connection is verified against.
+			firstPeerCertificate := resp.TLS.PeerCertificates[0]
+			if firstPeerCertificate != nil {
+				tlsExpiryDate = firstPeerCertificate.NotAfter
+			}
+		}
+
+		// TODO: Make sure this is the correct way to detect invalid certificates
+		if additionalMessage == "" && len(resp.TLS.PeerCertificates) > 0 && resp.TLS.VerifiedChains == nil {
+			additionalMessage = "invalid TLS certificate"
+		}
+	}
+
 	return Response{
-		Success:         expectedStatusCode,
-		StatusCode:      resp.StatusCode,
-		RequestDuration: timeEnd - timeStart,
-		Timestamp:       time.Now().UTC(),
-		Monitor:         w.monitor,
+		Success:           expectedStatusCode,
+		StatusCode:        resp.StatusCode,
+		RequestDuration:   timeEnd - timeStart,
+		Timestamp:         time.Now().UTC(),
+		Monitor:           w.monitor,
+		AdditionalMessage: additionalMessage,
+		HttpProtocol:      resp.Proto,
+		TLSVersion:        tlsVersion,
+		TLSCipherName:     tlsCipherName,
+		TLSExpiryDate:     tlsExpiryDate,
 	}, nil
 }
 
 func (w *Worker) makeIcmpRequest(ctx context.Context) (Response, error) {
 	span := sentry.StartSpan(ctx, "function", sentry.WithDescription("Worker.makeIcmpRequest"))
-	ctx = span.Context()
 	defer span.Finish()
 
 	timeStart := time.Now().UnixMilli()
