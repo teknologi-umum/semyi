@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"time"
 
 	"github.com/getsentry/sentry-go"
 	"github.com/rs/zerolog/log"
@@ -15,6 +16,32 @@ type MonitorHistoricalReader struct {
 
 func NewMonitorHistoricalReader(db *sql.DB) *MonitorHistoricalReader {
 	return &MonitorHistoricalReader{db: db}
+}
+
+type monitorHistoricalTableSchema struct {
+	MonitorID         string         `json:"monitor_id"`
+	Status            MonitorStatus  `json:"status"`
+	Latency           int64          `json:"latency"`
+	Timestamp         time.Time      `json:"timestamp"`
+	AdditionalMessage sql.NullString `json:"additional_message,omitempty"`
+	HttpProtocol      sql.NullString `json:"http_protocol,omitempty"`
+	TLSVersion        sql.NullString `json:"tls_version,omitempty"`
+	TLSCipherName     sql.NullString `json:"tls_cipher_name,omitempty"`
+	TLSExpiryDate     sql.NullTime   `json:"tls_expiry_date,omitempty"`
+}
+
+func (m monitorHistoricalTableSchema) ToMonitorHistorical() MonitorHistorical {
+	return MonitorHistorical{
+		MonitorID:         m.MonitorID,
+		Status:            m.Status,
+		Latency:           m.Latency,
+		Timestamp:         m.Timestamp,
+		AdditionalMessage: m.AdditionalMessage.String,
+		HttpProtocol:      m.HttpProtocol.String,
+		TLSVersion:        m.TLSVersion.String,
+		TLSCipherName:     m.TLSCipherName.String,
+		TLSExpiryDate:     m.TLSExpiryDate.Time,
+	}
 }
 
 func (r *MonitorHistoricalReader) ReadRawHistorical(ctx context.Context, monitorId string, limitResults bool) ([]MonitorHistorical, error) {
@@ -51,13 +78,13 @@ func (r *MonitorHistoricalReader) ReadRawHistorical(ctx context.Context, monitor
 
 	var monitorsHistorical []MonitorHistorical
 	for rows.Next() {
-		var row MonitorHistorical
+		var row monitorHistoricalTableSchema
 		err := rows.Scan(&row.Timestamp, &row.MonitorID, &row.Status, &row.Latency, &row.AdditionalMessage, &row.HttpProtocol, &row.TLSVersion, &row.TLSCipherName, &row.TLSExpiryDate)
 		if err != nil {
 			return []MonitorHistorical{}, fmt.Errorf("failed to scan row")
 		}
 
-		monitorsHistorical = append(monitorsHistorical, row)
+		monitorsHistorical = append(monitorsHistorical, row.ToMonitorHistorical())
 	}
 
 	return monitorsHistorical, nil
@@ -97,13 +124,13 @@ func (r *MonitorHistoricalReader) ReadHourlyHistorical(ctx context.Context, moni
 
 	var monitorsHistorical []MonitorHistorical
 	for rows.Next() {
-		var row MonitorHistorical
+		var row monitorHistoricalTableSchema
 		err := rows.Scan(&row.Timestamp, &row.MonitorID, &row.Status, &row.Latency, &row.AdditionalMessage, &row.HttpProtocol, &row.TLSVersion, &row.TLSCipherName, &row.TLSExpiryDate)
 		if err != nil {
 			return []MonitorHistorical{}, fmt.Errorf("failed to scan row")
 		}
 
-		monitorsHistorical = append(monitorsHistorical, row)
+		monitorsHistorical = append(monitorsHistorical, row.ToMonitorHistorical())
 	}
 
 	return monitorsHistorical, nil
@@ -143,13 +170,13 @@ func (r *MonitorHistoricalReader) ReadDailyHistorical(ctx context.Context, monit
 
 	var monitorsHistorical []MonitorHistorical
 	for rows.Next() {
-		var row MonitorHistorical
+		var row monitorHistoricalTableSchema
 		err := rows.Scan(&row.Timestamp, &row.MonitorID, &row.Status, &row.Latency, &row.AdditionalMessage, &row.HttpProtocol, &row.TLSVersion, &row.TLSCipherName, &row.TLSExpiryDate)
 		if err != nil {
 			return []MonitorHistorical{}, fmt.Errorf("failed to scan row")
 		}
 
-		monitorsHistorical = append(monitorsHistorical, row)
+		monitorsHistorical = append(monitorsHistorical, row.ToMonitorHistorical())
 	}
 
 	return monitorsHistorical, nil
@@ -173,7 +200,7 @@ func (r *MonitorHistoricalReader) ReadRawLatest(ctx context.Context, monitorId s
 		}
 	}()
 
-	var monitorsHistorical MonitorHistorical
+	var monitorsHistorical monitorHistoricalTableSchema
 	err = conn.QueryRowContext(ctx, "SELECT timestamp, monitor_id, status, latency, additional_message, http_protocol, tls_version, tls_cipher, tls_expiry FROM monitor_historical WHERE monitor_id = ? ORDER BY timestamp DESC LIMIT 1", monitorId).Scan(
 		&monitorsHistorical.Timestamp,
 		&monitorsHistorical.MonitorID,
@@ -189,5 +216,5 @@ func (r *MonitorHistoricalReader) ReadRawLatest(ctx context.Context, monitorId s
 		return MonitorHistorical{}, fmt.Errorf("failed to read latest raw historical data: %w", err)
 	}
 
-	return monitorsHistorical, nil
+	return monitorsHistorical.ToMonitorHistorical(), nil
 }

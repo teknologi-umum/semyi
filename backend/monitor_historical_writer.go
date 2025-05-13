@@ -161,6 +161,7 @@ func (w *MonitorHistoricalWriter) WriteHourly(ctx context.Context, historical Mo
 				?,
 				?,
 				?,
+				?,
 				?
 			)`,
 		historical.MonitorID,
@@ -250,6 +251,7 @@ func (w *MonitorHistoricalWriter) WriteDaily(ctx context.Context, historical Mon
 			)
 		VALUES
 			(
+				?,
 				?,
 				?,
 				?,
