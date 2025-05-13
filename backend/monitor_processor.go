@@ -50,11 +50,24 @@ func (m *Processor) ProcessResponse(ctx context.Context, response Response) {
 		},
 	})
 
+	lastHistoricalAvailable := true
+	lastHistorical, err := m.HistoricalReader.ReadRawLatest(ctx, uniqueId)
+	if err != nil {
+		lastHistoricalAvailable = false
+		log.Error().Err(err).Msg("failed to read historical data")
+		sentry.GetHubFromContext(ctx).CaptureException(err)
+	}
+
 	monitorHistorical := MonitorHistorical{
-		MonitorID: uniqueId,
-		Status:    status,
-		Latency:   response.RequestDuration,
-		Timestamp: response.Timestamp,
+		MonitorID:         uniqueId,
+		Status:            status,
+		Latency:           response.RequestDuration,
+		Timestamp:         response.Timestamp,
+		AdditionalMessage: response.AdditionalMessage,
+		HttpProtocol:      response.HttpProtocol,
+		TLSVersion:        response.TLSVersion,
+		TLSCipherName:     response.TLSCipherName,
+		TLSExpiryDate:     response.TLSExpiryDate,
 	}
 
 	attemptRemaining := 3
@@ -83,6 +96,18 @@ func (m *Processor) ProcessResponse(ctx context.Context, response Response) {
 	}
 
 	go func() {
+		ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), time.Minute*5)
+		defer cancel()
+
+		if !lastHistoricalAvailable {
+			return
+		}
+
+		// If the lastHistorical has difference with the current response, we should send an alert
+		if lastHistorical.Status == status {
+			return
+		}
+
 		if m.TelegramAlertProvider == nil && m.DiscordAlertProvider == nil && m.HTTPAlertProvider == nil && m.SlackAlertProvider == nil {
 			log.Warn().Msg("no alert providers are set, skipping alert")
 			return

@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 
@@ -533,12 +534,34 @@ func (s *Server) PushHealthcheck(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// See https://github.com/louislam/uptime-kuma/issues/279#issuecomment-1356352436
+	// status={up|down}
+	// msg={string} up or down message
+	// ping={integer} you have to measure it in your application. e.g. measure the ping of Uptime Kuma
+	status := r.URL.Query().Get("status")
+	message := r.URL.Query().Get("msg")
+	latencyString := r.URL.Query().Get("ping")
+	latency, _ := strconv.ParseFloat(latencyString, 64)
+
+	// Additional query parameters that's specific to Semyi
+	tlsVersion := r.URL.Query().Get("tls_version")
+	tlsCipher := r.URL.Query().Get("tls_cipher")
+	tlsExpiry := r.URL.Query().Get("tls_expiry")
+	tlsExpiryNumber, _ := strconv.ParseInt(tlsExpiry, 10, 64)
+	tlsExpiryDate := time.Unix(tlsExpiryNumber, 0)
+	httpProtocol := r.URL.Query().Get("http_protocol")
+
 	response := Response{
-		Success:         true,
-		StatusCode:      200,
-		RequestDuration: 0,
-		Timestamp:       time.Now().UTC(),
-		Monitor:         monitor,
+		Success:           status != "down",
+		StatusCode:        200,
+		RequestDuration:   int64(latency),
+		Timestamp:         time.Now().UTC(),
+		Monitor:           monitor,
+		AdditionalMessage: message,
+		HttpProtocol:      httpProtocol,
+		TLSVersion:        tlsVersion,
+		TLSCipherName:     tlsCipher,
+		TLSExpiryDate:     tlsExpiryDate,
 	}
 
 	go s.Processor.ProcessResponse(context.WithoutCancel(r.Context()), response)

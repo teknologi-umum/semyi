@@ -60,12 +60,51 @@ func (w *AggregateWorker) RunHourlyAggregate() {
 
 			var averageLatency = totalLatency / int64(len(lastHourData))
 			var averageStatus = MonitorStatus(totalStatus / int64(len(lastHourData)))
+			var additionalMessage, httpProtocol, tlsVersion, tlsCipherName string
+			var tlsExpiryDate time.Time
+			// Additional Semyi-specific information should be acquired from
+			// the latest available entry in the hourly aggregate table
+			for i := len(lastHourData) - 1; i >= 0; i-- {
+				data := lastHourData[i]
+				// Additional message should only be set if the status is not success
+				if averageStatus != MonitorStatusSuccess && additionalMessage == "" && data.AdditionalMessage != "" {
+					additionalMessage = data.AdditionalMessage
+				}
+
+				if httpProtocol == "" && data.HttpProtocol != "" {
+					httpProtocol = data.HttpProtocol
+				}
+
+				if tlsVersion == "" && data.TLSVersion != "" {
+					tlsVersion = data.TLSVersion
+				}
+
+				if tlsCipherName == "" && data.TLSCipherName != "" {
+					tlsCipherName = data.TLSCipherName
+				}
+
+				if tlsExpiryDate.IsZero() && !data.TLSExpiryDate.IsZero() {
+					tlsExpiryDate = data.TLSExpiryDate
+				}
+
+				// If everything has been set, we can break the loop
+				if additionalMessage != "" && httpProtocol != "" &&
+					tlsVersion != "" && tlsCipherName != "" &&
+					!tlsExpiryDate.IsZero() {
+					break
+				}
+			}
 
 			err = w.writer.WriteHourly(ctx, MonitorHistorical{
-				MonitorID: monitorId,
-				Status:    averageStatus,
-				Latency:   averageLatency,
-				Timestamp: fromTime,
+				MonitorID:         monitorId,
+				Status:            averageStatus,
+				Latency:           averageLatency,
+				Timestamp:         fromTime,
+				AdditionalMessage: additionalMessage,
+				HttpProtocol:      httpProtocol,
+				TLSVersion:        tlsVersion,
+				TLSCipherName:     tlsCipherName,
+				TLSExpiryDate:     tlsExpiryDate,
 			})
 			if err != nil {
 				log.Error().Err(err).Msg("failed to write hourly aggregate data")
@@ -122,12 +161,51 @@ func (w *AggregateWorker) RunDailyAggregate() {
 
 			var averageLatency = totalLatency / int64(len(lastHourData))
 			var averageStatus = MonitorStatus(totalStatus / int64(len(lastHourData)))
+			var additionalMessage, httpProtocol, tlsVersion, tlsCipherName string
+			var tlsExpiryDate time.Time
+			// Additional Semyi-specific information should be acquired from
+			// the latest available entry in the hourly aggregate table
+			for i := len(lastHourData) - 1; i >= 0; i-- {
+				data := lastHourData[i]
+				// Additional message should only be set if the status is not success
+				if averageStatus != MonitorStatusSuccess && additionalMessage == "" && data.AdditionalMessage != "" {
+					additionalMessage = data.AdditionalMessage
+				}
+
+				if httpProtocol == "" && data.HttpProtocol != "" {
+					httpProtocol = data.HttpProtocol
+				}
+
+				if tlsVersion == "" && data.TLSVersion != "" {
+					tlsVersion = data.TLSVersion
+				}
+
+				if tlsCipherName == "" && data.TLSCipherName != "" {
+					tlsCipherName = data.TLSCipherName
+				}
+
+				if tlsExpiryDate.IsZero() && !data.TLSExpiryDate.IsZero() {
+					tlsExpiryDate = data.TLSExpiryDate
+				}
+
+				// If everything has been set, we can break the loop
+				if additionalMessage != "" && httpProtocol != "" &&
+					tlsVersion != "" && tlsCipherName != "" &&
+					!tlsExpiryDate.IsZero() {
+					break
+				}
+			}
 
 			err = w.writer.WriteDaily(ctx, MonitorHistorical{
-				MonitorID: monitorId,
-				Status:    averageStatus,
-				Latency:   averageLatency,
-				Timestamp: fromTime,
+				MonitorID:         monitorId,
+				Status:            averageStatus,
+				Latency:           averageLatency,
+				Timestamp:         fromTime,
+				AdditionalMessage: additionalMessage,
+				HttpProtocol:      httpProtocol,
+				TLSVersion:        tlsVersion,
+				TLSCipherName:     tlsCipherName,
+				TLSExpiryDate:     tlsExpiryDate,
 			})
 			if err != nil {
 				log.Error().Err(err).Msg("failed to write daily aggregate data")
