@@ -10,7 +10,6 @@ import (
 	"os/signal"
 	"strconv"
 	"strings"
-	"syscall"
 	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
@@ -245,12 +244,15 @@ func main() {
 		}(worker)
 	}
 
-	go aggregateWorker.RunDailyAggregate()
-	go aggregateWorker.RunHourlyAggregate()
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer stop()
+
+	go aggregateWorker.RunDailyAggregate(ctx)
+	go aggregateWorker.RunHourlyAggregate(ctx)
 
 	// Initialize cleanup worker
 	cleanupWorker := NewCleanupWorker(db, config.RetentionPeriod)
-	go cleanupWorker.Run(context.Background())
+	go cleanupWorker.Run(ctx)
 
 	server := NewServer(ServerConfig{
 		SSLRedirect:             false,
@@ -266,13 +268,12 @@ func main() {
 		ApiKey:                  apiKey,
 	})
 	go func() {
-		// Listen for SIGKILL and SIGTERM
-		signalChan := make(chan os.Signal, 1)
-		signal.Notify(signalChan, os.Interrupt, syscall.SIGTERM)
-		<-signalChan
+		// Wait for the context to be cancelled or the server to receive an interrupt
+		// or the process to be terminated by the OS
+		<-ctx.Done()
 
 		log.Info().Msg("Shutting down server...")
-		ctx, cancel = context.WithTimeout(context.Background(), time.Second*10)
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 		defer cancel()
 
 		err = server.Shutdown(ctx)
