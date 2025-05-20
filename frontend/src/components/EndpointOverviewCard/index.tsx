@@ -1,6 +1,6 @@
 import type { Response, Snapshot } from "@/types";
 import { type Observable, map, take } from "rxjs";
-import { createMemo, createSignal, onMount } from "solid-js";
+import { createMemo, createSignal, onMount, Show } from "solid-js";
 import styles from "./styles.module.css";
 
 interface EndpointOverviewCardProps {
@@ -127,30 +127,29 @@ export default function EndpointOverviewCard(props: EndpointOverviewCardProps) {
             <span class={styles["overview__item-label"]}>Message</span>
             <span class={styles["overview__item-value"]}>{lastAdditionalMessage() ?? ""}</span>
           </div>
-        {
-          lastHttpProtocol() != null &&
+        <Show when={lastHttpProtocol() != null}>
           <div class={styles["overview__content-item"]}>
             <span class={styles["overview__item-label"]}>HTTP Protocol</span>
             <span class={styles["overview__item-value"]}>{lastHttpProtocol()}</span>
           </div>
-        }
+        </Show>
       </div>
-      {lastTLSInformation().tlsVersion != null && lastTLSInformation().tlsCipherName != null && lastTLSInformation().tlsExpiryDate != null && (
-      <div class={styles.overview__content}>
-          <div class={styles["overview__content-item"]}>
-            <span class={styles["overview__item-label"]}>TLS Version</span>
-            <span class={styles["overview__item-value"]}>{lastTLSInformation().tlsVersion}</span>
-          </div>
-          <div class={styles["overview__content-item"]}>
-            <span class={styles["overview__item-label"]}>TLS Cipher</span>
-            <span class={styles["overview__item-value"]}>{lastTLSInformation().tlsCipherName?.replaceAll("_", " ")}</span>
-          </div>
-          <div class={styles["overview__content-item"]}>
-            <span class={styles["overview__item-label"]}>TLS Expiry Date</span>
-            <span class={styles["overview__item-value"]}>{new Date(lastTLSInformation().tlsExpiryDate as string).toLocaleString(undefined, { dateStyle: "long", timeStyle: "short" })}</span>
-          </div>
-      </div>
-      )}
+      <Show when={lastTLSInformation().tlsVersion != null && lastTLSInformation().tlsCipherName != null && lastTLSInformation().tlsExpiryDate != null}>
+        <div class={styles.overview__content}>
+            <div class={styles["overview__content-item"]}>
+              <span class={styles["overview__item-label"]}>TLS Version</span>
+              <span class={styles["overview__item-value"]}>{lastTLSInformation().tlsVersion}</span>
+            </div>
+            <div class={styles["overview__content-item"]}>
+              <span class={styles["overview__item-label"]}>TLS Cipher</span>
+              <span class={styles["overview__item-value"]}>{lastTLSInformation().tlsCipherName?.replaceAll("_", " ")}</span>
+            </div>
+            <div class={styles["overview__content-item"]}>
+              <span class={styles["overview__item-label"]}>TLS Expiry Date</span>
+              <span class={styles["overview__item-value"]}>{new Date(lastTLSInformation().tlsExpiryDate as string).toLocaleString(undefined, { dateStyle: "long", timeStyle: "short" })}</span>
+            </div>
+        </div>
+      </Show>
     </div>
   );
 }
