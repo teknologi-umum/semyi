@@ -295,7 +295,7 @@ func (w *Worker) makeHttpRequest(ctx context.Context) (Response, error) {
 
 			}
 
-			for i, certificate := range resp.TLS.PeerCertificates {
+			for _, certificate := range resp.TLS.PeerCertificates {
 				verifiedChains, err := certificate.Verify(x509.VerifyOptions{
 					Intermediates: certificateAuthorityPool,
 				})
