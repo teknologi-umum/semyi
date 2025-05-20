@@ -1,6 +1,6 @@
 import type { Response, Snapshot } from "@/types";
 import { type Observable, map, take } from "rxjs";
-import { createMemo, createSignal, onMount, Show } from "solid-js";
+import { Show, createMemo, createSignal, onMount } from "solid-js";
 import styles from "./styles.module.css";
 
 interface EndpointOverviewCardProps {
