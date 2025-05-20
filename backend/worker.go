@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"crypto/tls"
+	"crypto/x509"
 	"errors"
 	"fmt"
 	"net"
@@ -27,6 +28,7 @@ type Response struct {
 	TLSVersion        string    `json:"tlsVersion,omitempty"`
 	TLSCipherName     string    `json:"tlsCipherName,omitempty"`
 	TLSExpiryDate     time.Time `json:"tlsExpiryDate,omitempty"`
+	TLSIssuer         string    `json:"tlsIssuer,omitempty"`
 	Monitor
 }
 
@@ -219,6 +221,13 @@ func (w *Worker) makeHttpRequest(ctx context.Context) (Response, error) {
 		}
 	}
 
+	certificateAuthorityPool, err := x509.SystemCertPool()
+	if err != nil {
+		log.Error().Err(err).Msg("failed to get system certificate pool")
+		sentry.GetHubFromContext(ctx).CaptureException(err)
+		certificateAuthorityPool = x509.NewCertPool()
+	}
+
 	client := &http.Client{
 		Timeout: time.Duration(w.monitor.Timeout) * time.Second,
 		Transport: &http.Transport{
@@ -236,7 +245,7 @@ func (w *Worker) makeHttpRequest(ctx context.Context) (Response, error) {
 			TLSClientConfig: &tls.Config{
 				// TODO: These should be configurable
 				Certificates:       nil,
-				RootCAs:            nil,
+				RootCAs:            certificateAuthorityPool,
 				InsecureSkipVerify: true,
 			},
 		},
@@ -267,22 +276,52 @@ func (w *Worker) makeHttpRequest(ctx context.Context) (Response, error) {
 
 	var additionalMessage, tlsVersion, tlsCipherName string
 	var tlsExpiryDate time.Time
+	var tlsIssuer string
 	if resp.TLS != nil {
 		tlsVersion = tls.VersionName(resp.TLS.Version)
 		tlsCipherName = tls.CipherSuiteName(resp.TLS.CipherSuite)
 
+		var tlsNotBeforeDate time.Time
+		var tlsCertificateInvalid bool
+		var tlsCertificateInvalidMessage string
 		if len(resp.TLS.PeerCertificates) > 0 {
 			// According to the Go stdlib docs:
 			// The first element is the leaf certificate that the connection is verified against.
 			firstPeerCertificate := resp.TLS.PeerCertificates[0]
 			if firstPeerCertificate != nil {
+				tlsIssuer = firstPeerCertificate.Issuer.String()
 				tlsExpiryDate = firstPeerCertificate.NotAfter
+				tlsNotBeforeDate = firstPeerCertificate.NotBefore
+
+			}
+
+			for _, certificate := range resp.TLS.PeerCertificates {
+				verifiedChains, err := certificate.Verify(x509.VerifyOptions{
+					Intermediates: certificateAuthorityPool,
+				})
+				if err == nil {
+					tlsCertificateInvalid = false
+					continue
+				}
+
+				if err != nil {
+					tlsCertificateInvalidMessage = err.Error()
+					tlsCertificateInvalid = true
+				} else if len(verifiedChains) == 0 {
+					tlsCertificateInvalidMessage = "TLS certificate is self-signed or not valid"
+					tlsCertificateInvalid = true
+				}
 			}
 		}
 
-		// TODO: Make sure this is the correct way to detect invalid certificates
-		if additionalMessage == "" && len(resp.TLS.PeerCertificates) > 0 && resp.TLS.VerifiedChains == nil {
-			additionalMessage = "invalid TLS certificate"
+		if additionalMessage == "" {
+			if tlsNotBeforeDate.After(time.Now()) {
+				additionalMessage = "TLS certificate is not valid yet"
+			} else if tlsExpiryDate.Before(time.Now()) {
+				additionalMessage = "TLS certificate is expired"
+			} else if tlsCertificateInvalid {
+				additionalMessage = tlsCertificateInvalidMessage
+			}
 		}
 	}
 
@@ -297,6 +336,7 @@ func (w *Worker) makeHttpRequest(ctx context.Context) (Response, error) {
 		TLSVersion:        tlsVersion,
 		TLSCipherName:     tlsCipherName,
 		TLSExpiryDate:     tlsExpiryDate,
+		TLSIssuer:         tlsIssuer,
 	}, nil
 }
 
