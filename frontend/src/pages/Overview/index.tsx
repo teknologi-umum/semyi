@@ -11,7 +11,7 @@ import styles from "./styles.module.css";
 export default function OverviewPage() {
   const abortController = new AbortController();
   const [staticSnapshot, { refetch }] = createResource(() =>
-    fetchAllStaticSnapshots([], "hourly", abortController.signal),
+    fetchAllStaticSnapshots([], "raw", abortController.signal),
   );
   const source = new EventSource(`${BASE_URL}/api/overview`);
   const snapshotStream$ = fromEvent<MessageEvent<string>>(source, "message").pipe(

@@ -34,6 +34,61 @@ export default function EndpointOverviewCard(props: EndpointOverviewCardProps) {
     return min.toFixed(1);
   });
 
+  const lastAdditionalMessage = createMemo(() => {
+    // The value of "additional_message" that exists within the last hour.
+    // If the value does not exists for snapshot bar within the hour, we return `null`.
+    const lastHour = snapshot().filter((s) => new Date(s.timestamp).getTime() > Date.now() - 3600 * 1000);
+    let additionalMessage: string | null = null;
+    for (const s of lastHour) {
+      if (s.additional_message != null) {
+        additionalMessage = s.additional_message;
+        break;
+      }
+    }
+
+    return additionalMessage;
+  });
+
+  const lastHttpProtocol = createMemo(() => {
+    // The value of "http_protocol" that exists within the last hour.
+    // If the value does not exists for snapshot bar within the hour, we return `null`.
+    const lastHour = snapshot().filter((s) => new Date(s.timestamp).getTime() > Date.now() - 3600 * 1000);
+    let httpProtocol: string | null = null;
+    for (const s of lastHour) {
+      if (s.http_protocol != null) {
+        httpProtocol = s.http_protocol;
+        break;
+      }
+    }
+
+    return httpProtocol;
+  });
+
+  const lastTLSInformation = createMemo(() => {
+    // The value of "tls_version", "tls_cipher_name", and "tls_expiry_date" that exists within the last hour.
+    // If the value does not exists for snapshot bar within the hour, we return `null`.
+    const lastHour = snapshot().filter((s) => new Date(s.timestamp).getTime() > Date.now() - 3600 * 1000);
+    let tlsVersion: string | null = null;
+    let tlsCipherName: string | null = null;
+    let tlsExpiryDate: string | null = null;
+    for (const s of lastHour) {
+      if (s.tls_version != null) {
+        tlsVersion = s.tls_version;
+      }
+      if (s.tls_cipher_name != null) {
+        tlsCipherName = s.tls_cipher_name;
+      }
+      if (s.tls_expiry_date != null) {
+        tlsExpiryDate = s.tls_expiry_date;
+      }
+    }
+    return {
+      tlsVersion,
+      tlsCipherName,
+      tlsExpiryDate,
+    };
+  });
+
   onMount(() => {
     props.snapshotStream$
       .pipe(
@@ -66,6 +121,36 @@ export default function EndpointOverviewCard(props: EndpointOverviewCardProps) {
           <span class={styles["overview__item-value"]}>{uptimeRate()}%</span>
         </div>
       </div>
+
+      <div class={styles.overview__content}>
+          <div class={styles["overview__content-item"]}>
+            <span class={styles["overview__item-label"]}>Message</span>
+            <span class={styles["overview__item-value"]}>{lastAdditionalMessage() ?? ""}</span>
+          </div>
+        {
+          lastHttpProtocol() != null &&
+          <div class={styles["overview__content-item"]}>
+            <span class={styles["overview__item-label"]}>HTTP Protocol</span>
+            <span class={styles["overview__item-value"]}>{lastHttpProtocol()}</span>
+          </div>
+        }
+      </div>
+      {lastTLSInformation().tlsVersion != null && lastTLSInformation().tlsCipherName != null && lastTLSInformation().tlsExpiryDate != null && (
+      <div class={styles.overview__content}>
+          <div class={styles["overview__content-item"]}>
+            <span class={styles["overview__item-label"]}>TLS Version</span>
+            <span class={styles["overview__item-value"]}>{lastTLSInformation().tlsVersion}</span>
+          </div>
+          <div class={styles["overview__content-item"]}>
+            <span class={styles["overview__item-label"]}>TLS Cipher</span>
+            <span class={styles["overview__item-value"]}>{lastTLSInformation().tlsCipherName?.replaceAll("_", " ")}</span>
+          </div>
+          <div class={styles["overview__content-item"]}>
+            <span class={styles["overview__item-label"]}>TLS Expiry Date</span>
+            <span class={styles["overview__item-value"]}>{new Date(lastTLSInformation().tlsExpiryDate as string).toLocaleString(undefined, { dateStyle: "long", timeStyle: "short" })}</span>
+          </div>
+      </div>
+      )}
     </div>
   );
 }

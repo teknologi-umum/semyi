@@ -284,7 +284,7 @@ func main() {
 	}()
 
 	// Start the server
-	log.Info().Msgf("Starting server on port %s", port)
+	log.Info().Msgf("Starting server on %s", server.Addr)
 	if e := server.ListenAndServe(); e != nil && !errors.Is(e, http.ErrServerClosed) {
 		log.Fatal().Err(err).Msg("Failed to start server")
 	}
